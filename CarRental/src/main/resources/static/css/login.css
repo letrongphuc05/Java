@@ -1,0 +1,199 @@
+/* Thiết lập cơ bản cho trang */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #ffffff; /* Nền trắng như trong ảnh */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Căn lề trên */
+    padding-top: 60px; /* Khoảng cách từ trên xuống */
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* Thiết lập cơ bản cho trang */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #ffffff;
+
+    /* THAY ĐỔI: Dùng flex-direction: column để xếp dọc */
+    display: flex;
+    flex-direction: column; /* Xếp header và form theo chiều dọc */
+    align-items: center; /* Căn giữa mọi thứ theo chiều ngang */
+
+    padding-top: 60px; /* Khoảng cách từ trên xuống */
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* XÓA BỎ HOÀN TOÀN KHỐI .container { ... } */
+
+
+/* Tiêu đề chính "EV Station" */
+.main-header {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    white-space: nowrap;
+
+
+    width: 100%;
+    max-width: 700px;
+
+
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+
+.login-form-container {
+    background-color: #ECECEC;
+    padding: 30px 35px;
+    border-radius: 10px;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+
+    max-width: 420px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+
+
+.main-header h1 {
+    color: #26C281;
+    white-space: nowrap;
+    font-size: 32px;
+    margin: 0;
+}
+
+.main-header p {
+    color: #333;
+    font-size: 18px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+
+.login-form-container {
+    background-color: #ECECEC;
+    padding: 30px 35px;
+    border-radius: 10px;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.login-form-container h2 {
+    text-align: center;
+    font-size: 22px;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #444;
+    font-size: 15px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"] {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid #D1D1D1;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 15px;
+    background-color: #FFFFFF;
+}
+
+
+.form-options {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+
+.form-options input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: #C6C6C6;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    margin-right: 10px;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+}
+
+
+
+.form-options label {
+    margin: 0;
+    font-weight: 500;
+    color: #555;
+    font-size: 15px;
+}
+
+
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background-color: #222;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-login:hover {
+    background-color: #444;
+}
+
+/* Link "Quên mật khẩu?" */
+.forgot-password {
+    text-align: center;
+    margin-top: 18px;
+}
+
+.forgot-password a {
+    color: #333; /* Màu đen */
+    text-decoration: underline; /* Có gạch chân */
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Link "Đăng ký" */
+.signup-link {
+    text-align: center;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #DCDCDC; /* Có 1 đường kẻ mờ ở trên */
+    font-size: 14px;
+    color: #555;
+}
+
+.signup-link a {
+    color: #333; /* Màu đen */
+    font-weight: 700; /* Rất đậm */
+    text-decoration: none;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+}
