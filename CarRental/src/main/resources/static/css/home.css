@@ -1,0 +1,246 @@
+/* Thiết lập cơ bản */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f4f5f7; /* Màu nền chung hơi xám */
+    height: 100%;
+}
+
+.page-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* 1. Header (Màu xanh lá) */
+.main-header {
+    background-color: #26C281; /* Màu xanh lá cây */
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-left, .header-right {
+    flex: 1;
+}
+
+.header-center {
+    flex: 2;
+    display: flex;
+    justify-content: center;
+}
+
+.header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+}
+
+.search-bar input {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #f0f0f0; /* Màu nền xám nhạt như trong ảnh */
+}
+
+.auth-buttons a {
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 9px 16px;
+    border-radius: 20px; /* Bo tròn (pill shape) */
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.auth-buttons .btn-login {
+    color: white;
+    margin-right: 10px;
+}
+
+.auth-buttons .btn-login:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.auth-buttons .btn-register {
+    background-color: white;
+    color: #333; /* Màu chữ đen */
+    border: 1px solid #ddd;
+}
+
+.auth-buttons .btn-register:hover {
+    background-color: #f0f0f0;
+}
+
+/* 2. Main Content (Phần trắng) */
+.main-content-wrapper {
+    flex-grow: 1;
+    padding: 20px; /* Khoảng cách với viền trình duyệt */
+}
+
+.main-content {
+    display: flex;
+    height: 100%; /* Quan trọng: để phần này lấp đầy */
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow: hidden; /* Đảm bảo các góc bo tròn hoạt động */
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* 2.1. Sidebar (Menu bên trái) */
+.sidebar {
+    width: 220px;
+    flex-shrink: 0; /* Không co lại */
+    background-color: #fafafa; /* Màu xám rất nhạt */
+    padding: 20px;
+    border-right: 1px solid #f0f0f0;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: sticky;
+    top: 100px; /* Dính lại khi cuộn (cần điều chỉnh) */
+}
+
+.sidebar li a {
+    display: block;
+    text-decoration: none;
+    color: #333;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar li a:hover {
+    background-color: #f0f0f0;
+}
+
+.sidebar li a.active {
+    background-color: #e6eefc; /* Màu xanh nhạt cho mục đang active */
+    color: #0056b3;
+    font-weight: 600;
+}
+
+/* 2.2. Content Area */
+.content-area {
+    flex-grow: 1;
+    display: flex;
+    padding: 25px;
+    overflow: auto; /* Cho phép cuộn nếu nội dung quá dài */
+}
+
+/* 2.2.1. Map Section */
+.map-section {
+    flex: 3; /* Chiếm 3/4 không gian */
+    display: flex;
+    flex-direction: column;
+}
+
+.map-section h2 {
+    font-size: 22px;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.map-placeholder {
+    width: 100%;
+    flex-grow: 1; /* Lấp đầy chiều cao còn lại */
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 18px;
+    min-height: 600px; /* Chiều cao tối thiểu cho bản đồ */
+    overflow: hidden;
+}
+
+/* 2.2.2. Location List */
+.location-list {
+    flex: 1; /* Chiếm 1/4 không gian */
+    margin-left: 25px;
+    display: flex;
+    flex-direction: column;
+    min-width: 280px; /* Độ rộng tối thiểu */
+}
+
+.location-list h3 {
+    font-size: 18px;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.location-scroll-list {
+    flex-grow: 1;
+    overflow-y: auto; /* Thêm thanh cuộn nếu danh sách quá dài */
+    max-height: 600px; /* Giới hạn chiều cao, khớp với bản đồ */
+}
+
+.location-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    overflow: hidden; /* Để bo góc thanh header bên trong */
+}
+
+.location-item:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    border-color: #ccc;
+}
+
+/* Thanh màu xám mờ trên thẻ */
+.location-item-header {
+    height: 60px; /* Chiều cao của thanh header */
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #eee;
+}
+
+.location-details {
+    padding: 15px;
+    background-color: #ffffff;
+}
+
+.location-details span {
+    display: block; /* Hiển thị trên 2 hàng riêng */
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #555;
+    font-weight: 500;
+}
+
+.location-details span:last-child {
+    margin-bottom: 0;
+}
+
+.location-details i {
+    margin-right: 8px; /* Khoảng cách icon và chữ */
+    color: #26C281; /* Màu xanh lá cho icon */
+}

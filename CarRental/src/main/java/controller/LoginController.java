@@ -11,8 +11,5 @@ public class LoginController {
         return "login";   // templates/login.html
     }
 
-    @GetMapping("/home")
-    public String dashboard() {
-        return "/home"; // templates/home.html
-    }
+
 }
