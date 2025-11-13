@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>EV Station </title>
+</head>
+<body>
+<h1>EV Station</h1>
+
+<p>Xin chào, <span sec:authentication="name"></span></p>
+<p>Role hiện tại: <span sec:authentication="principal.user.role"></span></p>
+
+<ul>
+    <li><a th:href="@{/admin/panel}">Khu vực Admin</a></li>
+    <li><a th:href="@{/staff/panel}">Khu vực Staff</a></li>
+    <li><a th:href="@{/renter/home}">Khu vực Người thuê</a></li>
+</ul>
+
+<p><a th:href="@{/logout}">Đăng xuất</a></p>
+</body>
+</html>
