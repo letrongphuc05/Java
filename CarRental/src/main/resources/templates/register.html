@@ -2,24 +2,18 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Đăng ký</title>
-    <link rel="stylesheet" th:href="@{/css/login.css}"/>
+    <title>Đăng ký tài khoản</title>
+    <link rel="stylesheet" th:href="@{/css/register.css}">
 </head>
-
 <body>
 
 <div class="main-header">
     <h1>EV Station</h1>
-    <p>Register Account</p>
+    <p>Thuê xe điện dễ dàng</p>
 </div>
 
 <div class="login-form-container">
-    <h2>Tạo tài khoản mới</h2>
-
-    <!-- Hiển thị lỗi -->
-    <div th:if="${error}" style="color:red; text-align:center; margin-bottom:15px;">
-        <p th:text="${error}"></p>
-    </div>
+    <h2>Tạo tài khoản</h2>
 
     <form th:action="@{/register}" method="post">
 
@@ -27,6 +21,7 @@
         <div class="form-group">
             <label for="username">Tên đăng nhập</label>
             <input type="text" id="username" name="username" required>
+            <div class="error-message" th:if="${errorUsername}" th:text="${errorUsername}"></div>
         </div>
 
         <!-- Password -->
@@ -35,13 +30,13 @@
             <input type="password" id="password" name="password" required>
         </div>
 
-        <!-- Confirm Password -->
+        <!-- CONFIRM PASSWORD (Thêm mới) -->
         <div class="form-group">
-            <label for="confirmPassword">Nhập lại mật khẩu</label>
+            <label for="confirmPassword">Xác nhận mật khẩu</label>
             <input type="password" id="confirmPassword" name="confirmPassword" required>
+            <div class="error-message" th:if="${errorConfirmPassword}" th:text="${errorConfirmPassword}"></div>
         </div>
 
-        <!-- Submit -->
         <button type="submit" class="btn-login">Đăng ký</button>
 
         <div class="signup-link">

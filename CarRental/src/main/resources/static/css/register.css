@@ -10,6 +10,7 @@ body {
     align-items: center;
 }
 
+
 /* Thiết lập cơ bản cho trang */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -128,7 +129,14 @@ body {
     font-size: 15px;
     background-color: #FFFFFF;
 }
-
+.error-message {
+    color: red;
+    font-size: 13px;
+    margin-top: 5px;
+}
+input.input-error {
+    border: 1px solid red !important;
+}
 
 .form-options {
     display: flex;
@@ -172,51 +180,7 @@ body {
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
-/* ========== ANIMATION CHO CHECKBOX “Ghi nhớ đăng nhập” ========== */
 
-.form-options input[type="checkbox"]::before {
-    content: "";
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.05);
-    opacity: 0;
-    transform: scale(0.5);
-    transition: 0.25s ease;
-}
-
-
-.form-options input[type="checkbox"]:hover::before {
-    opacity: 1;
-    transform: scale(1);
-}
-
-
-.form-options input[type="checkbox"]:checked {
-    background-color: #26C281;
-    box-shadow: 0 0 6px rgba(38, 194, 129, 0.6);
-    transition: 0.2s ease-in-out;
-}
-
-
-.form-options input[type="checkbox"]::after {
-    content: "✔";
-    color: white;
-    font-size: 11px;
-    position: absolute;
-    left: 3px;
-    top: 2px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-
-.form-options input[type="checkbox"]:checked::after {
-    opacity: 1;
-}
 .btn-login:hover {
     background-color: #444;
 }

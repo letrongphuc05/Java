@@ -42,6 +42,11 @@ public class SecurityConfig {
                         .defaultSuccessUrl("/home", true)
                         .permitAll()
                 )
+                .rememberMe(remember -> remember
+                        .rememberMeParameter("remember-me")
+                        .tokenValiditySeconds(7 * 24 * 60 * 60) // 7 ngày
+                        .key("EVSTATION_REMEMBER_KEY")
+                )
                 .logout(l -> l
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
