@@ -1,11 +1,11 @@
 package CarRental.example.security;
 
-import CarRental.example.entity.User;
+import CarRental.example.document.User;
 import CarRental.example.repository.UserRepository;
-import org.springframework.security.core.userdetails.*;
-import org.springframework.stereotype.Service;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-@Service
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository repo;
@@ -15,13 +15,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username)
-            throws UsernameNotFoundException {
-
-        User user = repo.findByUsername(username);
-        if (user == null) {
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User u = repo.findByUsername(username);
+        if (u == null) {
             throw new UsernameNotFoundException("User not found");
         }
-        return new CustomUserDetails(user);
+        return new CustomUserDetails(u);
     }
 }

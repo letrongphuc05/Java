@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class CarRentalApplication {
 
     public static void main(String[] args) {
-        // Khởi động toàn bộ ứng dụng Spring
         SpringApplication.run(CarRentalApplication.class, args);
     }
 }
