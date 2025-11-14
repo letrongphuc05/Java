@@ -2,7 +2,9 @@ package CarRental.example.config;
 
 import CarRental.example.document.User;
 import CarRental.example.repository.UserRepository;
+import CarRental.example.security.CustomLoginSuccessHandler;
 import CarRental.example.security.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +16,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration
 public class SecurityConfig {
+    @Autowireda
+    private CustomLoginSuccessHandler customLoginSuccessHandler;
 
     @Bean
     public UserDetailsService userDetailsService(UserRepository repo) {
@@ -42,7 +46,7 @@ public class SecurityConfig {
                 .formLogin(f -> f
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/home", true)
+                        .successHandler(customLoginSuccessHandler)
                         .permitAll()
                 )
                 .rememberMe(remember -> remember
