@@ -4,6 +4,7 @@ import CarRental.example.document.User;
 import CarRental.example.repository.UserRepository;
 import CarRental.example.security.CustomLoginSuccessHandler;
 import CarRental.example.security.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
