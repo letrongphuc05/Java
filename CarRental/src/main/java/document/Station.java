@@ -10,18 +10,67 @@ public class Station {
     private String id;
 
     private String name;
-    private double lat;
-    private double lng;
+    private double latitude;
+    private double longitude;
+    private int availableCars;
+    private String address;
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public Station() {
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public Station(String name, double latitude, double longitude, int availableCars, String address) {
+        this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.availableCars = availableCars;
+        this.address = address;
+    }
 
-    public double getLat() { return lat; }
-    public void setLat(double lat) { this.lat = lat; }
+    public String getId() {
+        return id;
+    }
 
-    public double getLng() { return lng; }
-    public void setLng(double lng) { this.lng = lng; }
+    public String getName() {
+        return name;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public int getAvailableCars() {
+        return availableCars;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
+    public void setAvailableCars(int availableCars) {
+        this.availableCars = availableCars;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
 }

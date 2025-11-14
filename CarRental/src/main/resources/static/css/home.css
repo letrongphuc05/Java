@@ -253,3 +253,27 @@ body, html {
     min-height: 600px;     /* Đảm bảo luôn thấy map, không bị cao = 0 */
     overflow: hidden;
 }
+
+.toast {
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity .3s ease, transform .3s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.hidden {
+    display: none;
+}

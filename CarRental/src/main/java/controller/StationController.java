@@ -10,19 +10,14 @@ import java.util.List;
 @RequestMapping("/api/stations")
 public class StationController {
 
-    private final StationRepository repo;
+    private final StationRepository stationRepository;
 
-    public StationController(StationRepository repo) {
-        this.repo = repo;
+    public StationController(StationRepository stationRepository) {
+        this.stationRepository = stationRepository;
     }
 
     @GetMapping
-    public List<Station> list() {
-        return repo.findAll();
-    }
-
-    @GetMapping("/{id}")
-    public Station get(@PathVariable String id) {
-        return repo.findById(id).orElse(null);
+    public List<Station> getAllStations() {
+        return stationRepository.findAll();
     }
 }
