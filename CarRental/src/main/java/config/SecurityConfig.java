@@ -16,7 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration
 public class SecurityConfig {
-    @Autowired
+    @Autowireda
     private CustomLoginSuccessHandler customLoginSuccessHandler;
 
     @Bean
@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .formLogin(f -> f
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/home", true)
+                        .successHandler(customLoginSuccessHandler)
                         .permitAll()
                 )
                 .rememberMe(remember -> remember
