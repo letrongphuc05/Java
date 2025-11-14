@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration
 public class SecurityConfig {
+    @Autowired
+    private CustomLoginSuccessHandler customLoginSuccessHandler;
 
     @Bean
     public UserDetailsService userDetailsService(UserRepository repo) {
