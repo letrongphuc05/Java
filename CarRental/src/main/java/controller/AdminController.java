@@ -15,4 +15,10 @@ public class AdminController {
     public String showStationManagement() {
         return "admin-stations";
     }
+    @GetMapping("/customers")
+    public String showCustomerManagement() { return "admin-customers"; }
+    @GetMapping("/staff")
+    public String showStaffManagement() { return "admin-staff"; }
+    @GetMapping("/reports")
+    public String showReportsDashboard() { return "admin-reports"; }
 }
