@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý điểm thuê</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div class="admin-container">
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="logo">⚡️</span>
+            <h2>EV Station</h2>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="#">Bảng điều khiển</a></li>
+            <li><a th:href="@{/admin/vehicles}">Quản lý độ xe</a></li>
+            <li><a th:href="@{/admin/stations}" class="active">Quản lý điểm thuê</a></li>
+            <li><a href="#">Điểm thuê</a></li>
+            <li><a href="#">Khách hàng</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-content">
+        <header class="content-header">
+            <div class="search-bar">
+                <input type="text" placeholder="Search...">
+            </div>
+            <div class="admin-profile">
+                <img th:src="@{/images/admin-avatar.png}" alt="Admin">
+                <span>Admin</span>
+            </div>
+        </header>
+
+        <main class="content-body">
+            <div class="page-header">
+                <h1>Quản lý điểm thuê</h1>
+                <button id="addStationBtn" class="btn-primary">+ Thêm mới</button>
+            </div>
+
+            <div class="data-table-container">
+                <div class="table-filters">
+                    <input type="text" id="searchInput" placeholder="Tìm kiếm điểm thuê...">
+                </div>
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>Tên cơ sở</th>
+                        <th>Địa chỉ (Tọa độ)</th>
+                        <th>Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody id="stationTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="addStationModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Thêm điểm thuê mới</h2>
+            <span class="close-button">&times;</span>
+        </div>
+        <form id="addStationForm">
+            <div class="form-group">
+                <label for="name">Tên điểm thuê</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="lat">Latitude (Vĩ độ)</label>
+                <input type="number" step="any" id="lat" name="lat" required>
+            </div>
+            <div class="form-group">
+                <label for="lng">Longitude (Kinh độ)</label>
+                <input type="number" step="any" id="lng" name="lng" required>
+            </div>
+            <button type="submit" class="btn-primary">Lưu lại</button>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/admin-stations.js}"></script>
+
+</body>
+</html>

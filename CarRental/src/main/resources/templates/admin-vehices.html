@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý độ xe</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div class="admin-container">
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="logo">⚡️</span>
+            <h2>EV Station</h2>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="#">Bảng điều khiển</a></li>
+            <li><a th:href="@{/admin/vehicles}" class="active">Quản lý độ xe</a></li>
+            <li><a th:href="@{/admin/stations}">Quản lý điểm thuê</a></li>
+            <li><a href="#">Điểm thuê</a></li>
+            <li><a href="#">Khách hàng</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-content">
+        <header class="content-header">
+            <div class="search-bar">
+                <input type="text" placeholder="Search...">
+            </div>
+            <div class="admin-profile">
+                <img th:src="@{/images/admin-avatar.png}" alt="Admin">
+                <span>Admin</span>
+            </div>
+        </header>
+
+        <main class="content-body">
+            <div class="page-header">
+                <h1>Tổng quan độ xe</h1>
+                <button id="addVehicleBtn" class="btn-primary">+ Thêm xe mới</button>
+            </div>
+
+            <div class="data-table-container">
+                <div class="table-filters">
+                    <input type="text" id="searchInput" placeholder="Tìm kiếm xe...">
+                </div>
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>Biển số xe</th>
+                        <th>Mẫu xe</th>
+                        <th>Trạm (Station ID)</th>
+                        <th>Pin</th>
+                        <th>Giá (VND/giờ)</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                    </thead>
+                    <tbody id="vehicleTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="addVehicleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Thêm xe mới</h2>
+            <span class="close-button">&times;</span>
+        </div>
+        <form id="addVehicleForm">
+            <div class="form-group">
+                <label for="plate">Biển số xe</label>
+                <input type="text" id="plate" name="plate" required>
+            </div>
+            <div class="form-group">
+                <label for="type">Mẫu xe</label>
+                <input type="text" id="type" name="type" required>
+            </div>
+            <div class="form-group">
+                <label for="battery">Pin (%)</label>
+                <input type="number" id="battery" name="battery" value="100" required>
+            </div>
+            <div class="form-group">
+                <label for="price">Giá (VND/giờ)</label>
+                <input type="number" id="price" name="price" required>
+            </div>
+            <div class="form-group">
+                <label for="stationId">Station ID</label>
+                <input type="text" id="stationId" name="stationId" required>
+            </div>
+            <button type="submit" class="btn-primary">Lưu lại</button>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/admin-vehicles.js}"></script>
+
+</body>
+</html>

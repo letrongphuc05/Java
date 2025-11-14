@@ -10,10 +10,9 @@ body, html {
     display: flex;
     height: 100vh;
 }
-
 .sidebar {
     width: 240px;
-    background-color:
+    background-color: #2c3e50;
     color: white;
     padding: 20px;
     flex-shrink: 0;
@@ -66,14 +65,12 @@ body, html {
     color: white;
     font-weight: 600;
 }
-
 .main-content {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
-
 .content-header {
     background-color: white;
     padding: 20px 30px;
@@ -104,7 +101,6 @@ body, html {
     margin-right: 10px;
     background-color: #eee;
 }
-
 .content-body {
     padding: 30px;
     overflow-y: auto;
@@ -140,6 +136,7 @@ body, html {
     background-color: #2980b9;
 }
 
+/* ----- BẢNG DỮ LIỆU ----- */
 .data-table-container {
     background-color: white;
     border-radius: 8px;
@@ -182,7 +179,6 @@ table.data-table td {
     color: #333;
     font-size: 15px;
 }
-
 .status {
     padding: 5px 10px;
     border-radius: 20px;
@@ -203,7 +199,6 @@ table.data-table td {
     background-color: #fdeeee;
     color: #e74c3c;
 }
-
 .modal {
     display: none;
     position: fixed;
@@ -263,7 +258,7 @@ table.data-table td {
     padding: 12px;
     border: 1px solid #ccc;
     border-radius: 6px;
-    box-sizing: border-box; 
+    box-sizing: border-box; /* Quan trọng */
     font-size: 15px;
 }
 .status-pending {
