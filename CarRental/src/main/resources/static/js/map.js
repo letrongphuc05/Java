@@ -1,188 +1,161 @@
-const DEFAULT_CENTER = [10.8030, 106.7200];
-const DEFAULT_ZOOM = 14;
+let stations = [];
+let userLat = null;
+let userLng = null;
+let router = null;
 
 let map;
-let userMarker = null;
-let userCoords = null;
-let stationMarkers = [];
-let routingControl = null;
 
+// ==============================
+// INIT MAP
+// ==============================
+function initMap() {
+    map = L.map("map").setView([10.80, 106.72], 14);
 
-function showToast(message, type = "info") {
-    const toast = document.getElementById("toast");
-    if (!toast) return;
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+        .addTo(map);
 
-    toast.classList.remove("hidden");
-    toast.textContent = message;
-
-    toast.style.backgroundColor =
-        type === "error" ? "rgba(220,53,69,0.9)" : "rgba(25,135,84,0.9)";
-
-    toast.classList.add("show");
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.classList.add("hidden"), 300);
-    }, 3500);
+    getUserLocation();
 }
 
-function haversineDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // km
-    const toRad = deg => deg * Math.PI / 180;
+// ==============================
+// GET USER LOCATION
+// ==============================
+function getUserLocation() {
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            userLat = pos.coords.latitude;
+            userLng = pos.coords.longitude;
 
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
+            L.marker([userLat, userLng], {
+                icon: L.icon({
+                    iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+                    iconSize: [32, 32]
+                })
+            })
+                .addTo(map)
+                .bindPopup("📍 Bạn đang ở đây")
+                .openPopup();
+
+            loadStations();
+        },
+        () => showToast("❌ Bạn từ chối quyền truy cập vị trí!")
+    );
+}
+
+// ==============================
+// LOAD STATIONS FROM API
+// ==============================
+function loadStations() {
+    fetch("/api/stations")
+        .then(res => res.json())
+        .then(data => {
+            stations = data;
+            renderStations();
+        })
+        .catch(() => showToast("Lỗi tải danh sách trạm!"));
+}
+
+// ==============================
+// RENDER LIST + MARKER
+// ==============================
+function renderStations() {
+
+    const list = document.getElementById("stationList");
+    list.innerHTML = "";
+
+    stations.forEach(st => {
+
+        // ===== TÍNH KHOẢNG CÁCH & ETA =====
+        st.distance = haversine(userLat, userLng, st.latitude, st.longitude);
+        st.eta = Math.round((st.distance / 30) * 60);
+
+        // ===== RENDER LIST =====
+        list.innerHTML += `
+            <div class="location-item"
+                 onclick="routeTo(${st.latitude}, ${st.longitude})">
+
+                <div class="location-item-header">
+                    <span class="station-title">${st.name}</span>
+                </div>
+
+                <div class="location-details">
+
+                    <span><i class="fa-solid fa-location-dot"></i>
+                        ${st.distance.toFixed(2)} km
+                    </span>
+
+                    <span><i class="fa-solid fa-car"></i>
+                        ${st.availableCars} xe có sẵn
+                    </span>
+
+                    <span><i class="fa-solid fa-clock"></i>
+                        ${st.eta} phút
+                    </span>
+                </div>
+            </div>
+        `;
+
+        // ===== RENDER MARKER (KHÔNG HIỆN TÊN TRẠM) =====
+        L.marker([st.latitude, st.longitude])
+            .addTo(map)
+            .bindPopup(`
+                📏 ${st.distance.toFixed(2)} km<br>
+                🚗 ${st.availableCars} xe<br>
+                ⏱ ${st.eta} phút<br><br>
+
+                <button onclick="routeTo(${st.latitude}, ${st.longitude})">
+                    🔄 Chỉ đường
+                </button>
+            `);
+    });
+}
+
+// ==============================
+// ROUTING (KHÔNG TẠO MARKER MỚI)
+// ==============================
+function routeTo(lat, lng) {
+
+    // ❗ Xóa route cũ nhưng KHÔNG xoá marker mặc định của leaflet
+    if (router) map.removeControl(router);
+
+    // ❗ TẮT default line marker của Leaflet Routing Machine
+    router = L.Routing.control({
+        waypoints: [
+            L.latLng(userLat, userLng),
+            L.latLng(lat, lng)
+        ],
+        routeWhileDragging: false,
+        createMarker: () => null, // <<< NGĂN KHÔNG CHO TẠO MARKER MỚI
+        lineOptions: { styles: [{ color: '#007bff', weight: 5 }] }
+    }).addTo(map);
+}
+
+// ==============================
+// DISTANCE CALC
+// ==============================
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
 
     const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function drawRoute(fromLatLng, toLatLng) {
-    if (!L.Routing) {
-        console.warn("Leaflet Routing Machine chưa được load");
-        return;
-    }
+// ==============================
+// TOAST
+// ==============================
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.innerHTML = msg;
+    t.className = "toast show";
 
-    if (routingControl) {
-        map.removeControl(routingControl);
-    }
-
-    routingControl = L.Routing.control({
-        waypoints: [
-            L.latLng(fromLatLng.lat, fromLatLng.lng),
-            L.latLng(toLatLng.lat, toLatLng.lng)
-        ],
-        addWaypoints: false,
-        routeWhileDragging: false,
-        draggableWaypoints: false,
-        fitSelectedRoutes: true,
-        show: false
-    }).addTo(map);
+    setTimeout(() => t.className = "toast hidden", 3000);
 }
 
-function findNearestStation() {
-    if (!userCoords || stationMarkers.length === 0) return;
-
-    let nearest = null;
-    let minDistance = Infinity;
-
-    stationMarkers.forEach(marker => {
-        const st = marker.station;
-        const d = haversineDistance(
-            userCoords.lat, userCoords.lng,
-            st.latitude, st.longitude
-        );
-
-        if (d < minDistance) {
-            minDistance = d;
-            nearest = { marker, station: st, distance: d };
-        }
-    });
-
-    if (!nearest) return;
-
-    nearest.marker.openPopup();
-
-    drawRoute(
-        userCoords,
-        { lat: nearest.station.latitude, lng: nearest.station.longitude }
-    );
-
-    const distanceStr = nearest.distance.toFixed(2);
-    showToast(
-        `Trạm gần nhất: ${nearest.station.name} (~${distanceStr} km)`,
-        "info"
-    );
-}
-
-async function loadStations() {
-    try {
-        const res = await fetch("/api/stations");
-        if (!res.ok) {
-            throw new Error("Không thể tải danh sách trạm");
-        }
-
-        const stations = await res.json();
-
-        stations.forEach(st => {
-            const marker = L.marker([st.latitude, st.longitude]).addTo(map);
-
-            marker.bindPopup(
-                `<b>${st.name}</b><br/>
-                 ${st.address || ""}<br/>
-                 ${st.availableCars} xe có sẵn`
-            );
-
-            marker.station = st;
-            stationMarkers.push(marker);
-        });
-    } catch (err) {
-        console.error(err);
-        showToast("Lỗi khi tải danh sách trạm thuê", "error");
-    }
-}
-
-function onLocationSuccess(position) {
-    const { latitude, longitude } = position.coords;
-    userCoords = { lat: latitude, lng: longitude };
-
-    if (userMarker) {
-        map.removeLayer(userMarker);
-    }
-
-    userMarker = L.marker([latitude, longitude], {
-        title: "Bạn đang ở đây"
-    }).addTo(map);
-
-    userMarker.bindPopup("Bạn đang ở đây").openPopup();
-
-    map.setView([latitude, longitude], 15);
-
-    findNearestStation();
-}
-
-function onLocationError(error) {
-    console.warn("Geolocation error:", error);
-    showToast("Không thể lấy vị trí của bạn. Hãy bật GPS / cho phép truy cập vị trí.", "error");
-}
-
-function initMap() {
-    const mapEl = document.getElementById("map");
-    if (!mapEl) {
-        console.warn("Không tìm thấy phần tử #map");
-        return;
-    }
-
-    map = L.map("map").setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Load trạm
-    loadStations();
-
-    // Yêu cầu quyền truy cập vị trí
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            onLocationSuccess,
-            onLocationError,
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0
-            }
-        );
-    } else {
-        showToast("Trình duyệt không hỗ trợ lấy vị trí.", "error");
-    }
-}
-
-document.addEventListener("DOMContentLoaded", initMap);
+initMap();
