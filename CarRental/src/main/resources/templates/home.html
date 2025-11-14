@@ -4,13 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trang chủ - EV Station</title>
+
+    <!-- CSS của bạn -->
     <link rel="stylesheet" th:href="@{/css/home.css}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- CSS Leaflet -->
+    <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+            crossorigin=""
+    />
 </head>
+
 <body>
 <div class="page-container">
-
-    <!-- 1. Header (Màu xanh lá) -->
     <header class="main-header">
         <div class="header-left">
             <div class="logo">EV Station</div>
@@ -28,11 +38,8 @@
         </div>
     </header>
 
-    <!-- 2. Main Content (Phần nội dung chính màu trắng) -->
     <div class="main-content-wrapper">
         <div class="main-content">
-
-            <!-- 2.1. Sidebar (Menu bên trái) -->
             <nav class="sidebar">
                 <ul>
                     <li><a th:href="@{/}" class="active">Trang chủ</a></li>
@@ -42,31 +49,20 @@
                 </ul>
             </nav>
 
-            <!-- 2.2. Content Area (Khu vực nội dung chính) -->
+            <!--Content Area-->
             <main class="content-area">
 
-                <!-- 2.2.1. Khu vực bản đồ -->
+                <!--Khu vực bản đồ-->
                 <section class="map-section">
                     <h2>Tìm điểm thuê gần bạn</h2>
-                    <div class="map-placeholder">
-                        <!-- Đây là nơi bạn sẽ nhúng bản đồ (vd: Google Maps API) -->
-                        <img src="https://i.imgur.com/gXqD6m5.png" alt="Bản đồ" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
-                    </div>
+                    <!-- Chỉ dùng id="map", chiều cao sẽ xử lý bằng CSS -->
+                    <div id="map"></div>
                 </section>
 
-                <!-- 2.2.2. Danh sách địa điểm (Bên phải) -->
+                <!--Danh sách địa điểm-->
                 <aside class="location-list">
                     <h3>Các điểm thuê</h3>
                     <div class="location-scroll-list">
-                        <!-- Item 1 -->
-                        <div class="location-item">
-                            <div class="location-item-header"></div> <!-- Thanh màu xám mờ -->
-                            <div class="location-details">
-                                <span><i class="fa-solid fa-location-dot"></i> 2.5 km</span>
-                                <span><i class="fa-solid fa-car"></i> 3 xe có sẵn</span>
-                            </div>
-                        </div>
-                        <!-- Item 2 -->
                         <div class="location-item">
                             <div class="location-item-header"></div>
                             <div class="location-details">
@@ -74,7 +70,13 @@
                                 <span><i class="fa-solid fa-car"></i> 3 xe có sẵn</span>
                             </div>
                         </div>
-                        <!-- Item 3 -->
+                        <div class="location-item">
+                            <div class="location-item-header"></div>
+                            <div class="location-details">
+                                <span><i class="fa-solid fa-location-dot"></i> 2.5 km</span>
+                                <span><i class="fa-solid fa-car"></i> 3 xe có sẵn</span>
+                            </div>
+                        </div>
                         <div class="location-item">
                             <div class="location-item-header"></div>
                             <div class="location-details">
@@ -82,12 +84,23 @@
                                 <span><i class="fa-solid fa-car-side"></i> 0 xe có sẵn</span>
                             </div>
                         </div>
-                    </div> <!-- <-- ĐÓNG location-scroll-list -->
-                </aside> <!-- <-- ĐÓNG location-list -->
+                    </div>
+                </aside>
 
-            </main> <!-- <-- ĐÓNG content-area -->
-        </div> <!-- <-- ĐÓNG main-content -->
-    </div> <!-- <-- ĐÓNG main-content-wrapper -->
-</div> <!-- <-- ĐÓNG page-container -->
+            </main>
+        </div>
+    </div>
+</div>
+
+<!-- JS Leaflet (đặt ở cuối body để DOM sẵn sàng) -->
+<script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+></script>
+
+<!-- map.js của bạn -->
+<script th:src="@{/js/map.js}"></script>
+
 </body>
 </html>

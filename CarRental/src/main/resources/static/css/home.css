@@ -244,3 +244,12 @@ body, html {
     margin-right: 8px; /* Khoảng cách icon và chữ */
     color: #26C281; /* Màu xanh lá cho icon */
 }
+
+#map {
+    width: 100%;
+    flex-grow: 1;          /* Cho map chiếm hết chiều cao còn lại trong map-section */
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    min-height: 600px;     /* Đảm bảo luôn thấy map, không bị cao = 0 */
+    overflow: hidden;
+}
