@@ -189,6 +189,57 @@ body {
     background-color: #45a049;
 }
 
+/* ============================================
+   STATION LIST
+   ============================================ */
+
+.station-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.station-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #ffffff;
+    border: 1px solid #d9e8dc;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.station-item i {
+    color: #2e7d32;
+    font-size: 20px;
+}
+
+.station-item:hover {
+    background-color: #e8f5e9;
+    border-color: #4CAF50;
+    transform: translateX(4px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+/* Station được chọn */
+.station-item.active-station {
+    background-color: #d7f8d7;
+    border-color: #2e7d32;
+    box-shadow: 0 3px 10px rgba(46,125,50,0.25);
+    transform: translateX(4px);
+    font-weight: 600;
+}
+
+.station-item.active-station i {
+    color: #1b5e20;
+}
+
+
 .selected-location-display {
     padding: 10px 15px;
     background-color: #e6ffe6; /* Nền xanh lá nhạt */
@@ -204,6 +255,8 @@ body {
     margin-right: 10px;
     color: #4CAF50;
 }
+
+
 
 
 /* Available Vehicles Grid (Giữ nguyên như trước, nhưng giờ không nằm trong flex-container với điểm thuê) */

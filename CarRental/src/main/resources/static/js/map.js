@@ -26,14 +26,15 @@ function getUserLocation() {
             userLat = pos.coords.latitude;
             userLng = pos.coords.longitude;
 
-            L.marker([userLat, userLng], {
+            const userMarker = L.marker([userLat, userLng], {
                 icon: L.icon({
                     iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
                     iconSize: [32, 32]
                 })
-            })
-                .addTo(map)
-                .bindPopup("📍 Bạn đang ở đây")
+            });
+
+            userMarker.addTo(map)
+                .bindPopup("📍 Vị trí của bạn")
                 .openPopup();
 
             loadStations();
@@ -52,11 +53,11 @@ function loadStations() {
             stations = data;
             renderStations();
         })
-        .catch(() => showToast("Lỗi tải danh sách trạm!"));
+        .catch(() => showToast("❌ Lỗi tải danh sách trạm!"));
 }
 
 // ==============================
-// RENDER LIST + MARKER
+// RENDER LIST + MAP MARKERS
 // ==============================
 function renderStations() {
 
@@ -65,69 +66,93 @@ function renderStations() {
 
     stations.forEach(st => {
 
+        // KHẮC PHỤC LỖI ID
+        const stationId = st._id;
+
         // ===== TÍNH KHOẢNG CÁCH & ETA =====
         st.distance = haversine(userLat, userLng, st.latitude, st.longitude);
         st.eta = Math.round((st.distance / 30) * 60);
 
-        // ===== RENDER LIST =====
-        list.innerHTML += `
-            <div class="location-item"
-                 onclick="routeTo(${st.latitude}, ${st.longitude})">
+        // ===== RANDOM OFFSET =====
+        const offset = 0.00015;
+        const lat = st.latitude + (Math.random() - 0.5) * offset;
+        const lng = st.longitude + (Math.random() - 0.5) * offset;
 
+        // ===== RENDER SIDEBAR LIST =====
+        list.innerHTML += `
+            <div class="location-item" onclick="openStation(${lat}, ${lng}, '${stationId}')">
                 <div class="location-item-header">
                     <span class="station-title">${st.name}</span>
                 </div>
-
                 <div class="location-details">
-
-                    <span><i class="fa-solid fa-location-dot"></i>
-                        ${st.distance.toFixed(2)} km
-                    </span>
-
-                    <span><i class="fa-solid fa-car"></i>
-                        ${st.availableCars} xe có sẵn
-                    </span>
-
-                    <span><i class="fa-solid fa-clock"></i>
-                        ${st.eta} phút
-                    </span>
+                    <span><i class="fa-solid fa-location-dot"></i> ${st.distance.toFixed(2)} km</span>
+                    <span><i class="fa-solid fa-car"></i> ${st.availableCars} xe có sẵn</span>
+                    <span><i class="fa-solid fa-clock"></i> ${st.eta} phút</span>
                 </div>
             </div>
         `;
 
-        // ===== RENDER MARKER (KHÔNG HIỆN TÊN TRẠM) =====
-        L.marker([st.latitude, st.longitude])
-            .addTo(map)
-            .bindPopup(`
-                📏 ${st.distance.toFixed(2)} km<br>
-                🚗 ${st.availableCars} xe<br>
-                ⏱ ${st.eta} phút<br><br>
+        // ===== RENDER MARKER =====
+        const marker = L.marker([lat, lng]).addTo(map);
 
-                <button onclick="routeTo(${st.latitude}, ${st.longitude})">
-                    🔄 Chỉ đường
-                </button>
-            `);
+        marker.bindPopup(`
+            <b style="font-size:14px">${st.name}</b><br>
+            📏 ${st.distance.toFixed(2)} km<br>
+            🚗 ${st.availableCars} xe<br>
+            ⏱ ${st.eta} phút<br><br>
+
+            <button style="padding:5px 10px"
+                    onclick="routeTo(${lat}, ${lng}); event.stopPropagation();">
+                🔄 Chỉ đường
+            </button>
+
+            <button style="padding:5px 10px; margin-left:8px"
+                    onclick="goToBooking('${stationId}'); event.stopPropagation();">
+                🚲 Đặt xe
+            </button>
+        `);
     });
 }
 
 // ==============================
-// ROUTING (KHÔNG TẠO MARKER MỚI)
+// OPEN POPUP
+// ==============================
+function openStation(lat, lng, stationId) {
+    map.setView([lat, lng], 16);
+
+    L.popup()
+        .setLatLng([lat, lng])
+        .setContent(`
+            <b style="font-size:14px">Trạm được chọn</b><br><br>
+            <button onclick="routeTo(${lat}, ${lng})">🔄 Chỉ đường</button>
+            <button onclick="goToBooking('${stationId}')" style="margin-left:6px">🚲 Đặt xe</button>
+        `)
+        .openOn(map);
+}
+
+// ==============================
+// ROUTING
 // ==============================
 function routeTo(lat, lng) {
 
-    // ❗ Xóa route cũ nhưng KHÔNG xoá marker mặc định của leaflet
     if (router) map.removeControl(router);
 
-    // ❗ TẮT default line marker của Leaflet Routing Machine
     router = L.Routing.control({
         waypoints: [
             L.latLng(userLat, userLng),
             L.latLng(lat, lng)
         ],
         routeWhileDragging: false,
-        createMarker: () => null, // <<< NGĂN KHÔNG CHO TẠO MARKER MỚI
+        createMarker: () => null,
         lineOptions: { styles: [{ color: '#007bff', weight: 5 }] }
     }).addTo(map);
+}
+
+// ==============================
+// MOVE TO BOOKING PAGE
+// ==============================
+function goToBooking(stationId) {
+    window.location.href = `/datxe?stationId=${stationId}`;
 }
 
 // ==============================

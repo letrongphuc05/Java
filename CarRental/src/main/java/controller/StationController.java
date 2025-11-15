@@ -2,42 +2,43 @@ package CarRental.example.controller;
 
 import CarRental.example.document.Station;
 import CarRental.example.repository.StationRepository;
-import org.springframework.web.bind.annotation.*;
+import CarRental.example.repository.VehicleRepository;
 
-import java.util.List;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/stations")
 public class StationController {
 
-    private final StationRepository stationRepository;
+    @Autowired
+    private StationRepository stationRepo;
 
-    public StationController(StationRepository stationRepository) {
-        this.stationRepository = stationRepository;
-    }
+    @Autowired
+    private VehicleRepository vehicleRepo;
 
     @GetMapping
-    public List<Station> getAllStations() {
-        return stationRepository.findAll();
+    public List<Map<String, Object>> getStations() {
+
+        List<Station> stations = stationRepo.findAll();
+        List<Map<String, Object>> data = new ArrayList<>();
+
+        for (Station st : stations) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", st.getId());
+            map.put("name", st.getName());
+            map.put("latitude", st.getLatitude());
+            map.put("longitude", st.getLongitude());
+            map.put("address", st.getAddress());
+
+            long count = vehicleRepo.countByStationIdAndAvailable(st.getId(), true);
+            map.put("availableCars", count);
+
+            data.add(map);
+        }
+
+        return data;
     }
 }
-
-//    // --- CÁC PHƯƠNG THỨC ADMIN PHẢI NẰM BÊN TRONG CLASS ---
-//
-//    @PostMapping("/admin/add")
-//    public Station addStation(@RequestBody Station station) {
-//        return repo.save(station);
-//    }
-//
-//    @PutMapping("/admin/update/{id}")
-//    public Station updateStation(@PathVariable String id, @RequestBody Station updatedStation) {
-//        updatedStation.setId(id);
-//        return repo.save(updatedStation);
-//    }
-//
-//    @DeleteMapping("/admin/delete/{id}")
-//    public String deleteStation(@PathVariable String id) {
-//        repo.deleteById(id);
-//        return "Delete station " + id + " success";
-//    }
-//}

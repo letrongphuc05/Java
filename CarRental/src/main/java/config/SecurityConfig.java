@@ -16,7 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration
 public class SecurityConfig {
-    @Autowireda
+    @Autowired
     private CustomLoginSuccessHandler customLoginSuccessHandler;
 
     @Bean
@@ -35,7 +35,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/register", "/api/auth/**", "/css/**", "/js/**").permitAll()
-                        .requestMatchers("/api/renter/**").hasRole("USER")
+                        .requestMatchers("/api/renter/**", "/api/rentals/**").hasRole("USER")
                         .requestMatchers("/admin/**",
                                 "/api/vehicles/admin/**",
                                 "/api/stations/admin/**")
