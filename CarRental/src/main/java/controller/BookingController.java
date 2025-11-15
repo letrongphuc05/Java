@@ -10,7 +10,7 @@ public class BookingController {
 
     @GetMapping
     public String showBookingPage() {
-        return "datxe";
+        return "user-datxe";
     }
 
 }

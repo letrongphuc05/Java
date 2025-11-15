@@ -8,6 +8,6 @@ public class ProfileController {
 
     @GetMapping("/ho-so")
     public String showProfilePage() {
-        return "hosocanhan";
+        return "user-hosocanhan";
     }
 }
