@@ -8,4 +8,6 @@ import java.util.List;
 public interface VehicleRepository extends MongoRepository<Vehicle, String> {
 
     List<Vehicle> findByStationIdAndAvailable(String stationId, boolean available);
+
+    long countByStationIdAndAvailable(String stationId, boolean available);
 }

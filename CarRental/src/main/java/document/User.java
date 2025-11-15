@@ -13,14 +13,12 @@ public class User {
 
     private String username;
     private String password;
-    private String role;      // "ROLE_ADMIN" / "ROLE_STAFF" / "ROLE_USER"
+    private String role;
     private boolean enabled = true;
 
-    // GPLX
     @Field("license")
     private Binary licenseData;
 
-    // CMND/CCCD
     @Field("idcard")
     private Binary idCardData;
 

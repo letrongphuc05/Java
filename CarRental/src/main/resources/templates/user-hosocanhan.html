@@ -78,5 +78,51 @@
         </div>
     </div>
 </div>
+<script>
+    async function loadProfile() {
+        const res = await fetch("/api/renter/profile");
+        const u = await res.json();
+
+        document.querySelector(".profile-info h2").innerText = u.username;
+        // Bạn có thể mở rộng thêm email, sdt,…
+
+        loadStats();
+    }
+
+    async function loadStats() {
+        const res = await fetch("/api/rentals/stats");
+        const st = await res.json();
+
+        const items = document.querySelectorAll(".activity-item .activity-value");
+        items[0].innerText = st.totalTrips;
+        items[1].innerText = st.avgMinutesPerTrip + " phút";
+        items[2].innerText = st.totalSpent + " đ";
+    }
+
+    async function uploadDoc(type) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+
+        input.onchange = async () => {
+            const form = new FormData();
+            form.append("file", input.files[0]);
+
+            await fetch(`/api/renter/upload-${type}`, {
+                method: "POST",
+                body: form
+            });
+
+            alert("Tải lên thành công!");
+        };
+
+        input.click();
+    }
+
+    document.querySelectorAll(".doc-button")[0].onclick = () => uploadDoc("license");
+    document.querySelectorAll(".doc-button")[1].onclick = () => uploadDoc("idcard");
+
+    loadProfile();
+</script>
 </body>
 </html>

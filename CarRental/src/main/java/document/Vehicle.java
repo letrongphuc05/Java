@@ -11,6 +11,7 @@ public class Vehicle {
 
     private String plate;
     private String type;
+    private String brand;
     private int battery;
     private double price;
 
@@ -25,6 +26,9 @@ public class Vehicle {
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
+
+    public String getBrand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
 
     public int getBattery() { return battery; }
     public void setBattery(int battery) { this.battery = battery; }

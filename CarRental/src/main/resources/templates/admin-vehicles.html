@@ -15,10 +15,10 @@
         </div>
         <ul class="sidebar-nav">
             <li><a href="#">Bảng điều khiển</a></li>
-            <li><a th:href="@{/admin/vehicles}" class="active">Quản lý độ xe</a></li>
+            <li><a th:href="@{/admin/vehicles}" class="active">Quản lý xe</a></li>
             <li><a th:href="@{/admin/stations}">Quản lý điểm thuê</a></li>
-            <li><a href="#">Điểm thuê</a></li>
-            <li><a href="#">Khách hàng</a></li>
+            <li><a th:href="@{/admin/history}">Lịch sử thuê</a></li>
+            <li><a th:href="@{/admin/customers}">Khách hàng</a></li>
         </ul>
     </nav>
 
@@ -50,8 +50,8 @@
                         <th>Mẫu xe</th>
                         <th>Trạm (Station ID)</th>
                         <th>Pin</th>
-                        <th>Giá (VND/giờ)</th>
-                        <th>Trạng thái</th>
+                        <th>Giá (VND/giờ)</th> <th>Trạng thái</th>
+                        <th>Hành động</th>
                     </tr>
                     </thead>
                     <tbody id="vehicleTableBody">
@@ -74,7 +74,11 @@
                 <input type="text" id="plate" name="plate" required>
             </div>
             <div class="form-group">
-                <label for="type">Mẫu xe</label>
+                <label for="brand">Hãng xe (Vd: VinFast Evo 200)</label>
+                <input type="text" id="brand" name="brand" required>
+            </div>
+            <div class="form-group">
+                <label for="type">Loại xe (Vd: Xe máy điện)</label>
                 <input type="text" id="type" name="type" required>
             </div>
             <div class="form-group">
@@ -82,8 +86,7 @@
                 <input type="number" id="battery" name="battery" value="100" required>
             </div>
             <div class="form-group">
-                <label for="price">Giá (VND/giờ)</label>
-                <input type="number" id="price" name="price" required>
+                <label for="price">Giá (VND/giờ)</label> <input type="number" id="price" name="price" required>
             </div>
             <div class="form-group">
                 <label for="stationId">Station ID</label>
@@ -93,6 +96,54 @@
         </form>
     </div>
 </div>
+
+<div id="editVehicleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Cập nhật thông tin xe</h2>
+            <span class="close-button">&times;</span>
+        </div>
+        <form id="editVehicleForm">
+            <input type="hidden" id="edit-vehicleId" name="id">
+
+            <div class="form-group">
+                <label for="edit-plate">Biển số xe</label>
+                <input type="text" id="edit-plate" name="plate" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-brand">Hãng xe</label>
+                <input type="text" id="edit-brand" name="brand" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-type">Loại xe</label>
+                <input type="text" id="edit-type" name="type" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-battery">Pin (%)</label>
+                <input type="number" id="edit-battery" name="battery" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-price">Giá (VND/giờ)</LAbel> <input type="number" id="edit-price" name="price" required>
+            </div>
+
+            <div class="form-group">
+                <label for="edit-stationId">Station ID (Điều phối)</label>
+                <input type="text" id="edit-stationId" name="stationId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="edit-available">Trạng thái</label>
+                <select id="edit-available" name="available">
+                    <option value="true">Sẵn sàng</option>
+                    <option value="false">Đang thuê / Bảo trì</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-primary">Cập nhật</button>
+        </form>
+    </div>
+</div>
+
 
 <script th:src="@{/js/admin-vehicles.js}"></script>
 
