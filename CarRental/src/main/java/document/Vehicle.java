@@ -10,8 +10,8 @@ public class Vehicle {
     private String id;
 
     private String plate;
-    private String type;      // Xe máy điện / Ô tô điện 4 chỗ / Ô tô điện 7 chỗ
-    private String brand;     // VinFast Evo 200, VF e34, VF9...
+    private String type;
+    private String brand;
     private int battery;
     private double price;
 

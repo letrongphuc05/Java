@@ -37,9 +37,6 @@ public class RentalController {
         return auth != null ? auth.getName() : null;
     }
 
-    // =======================
-    // 1. ĐẶT XE (BOOK)
-    // =======================
     @PostMapping("/book")
     public Object book(@RequestParam String vehicleId) {
 
@@ -49,7 +46,6 @@ public class RentalController {
         User user = userRepo.findByUsername(username);
         if (user == null) return "User not found";
 
-        // yêu cầu user đã upload GPLX + CMND/CCCD
         if (user.getLicenseData() == null || user.getIdCardData() == null) {
             return "You must upload License and ID Card before booking";
         }
@@ -57,7 +53,6 @@ public class RentalController {
         Vehicle v = vehicleRepo.findById(vehicleId).orElse(null);
         if (v == null || !v.isAvailable()) return "Vehicle not available";
 
-        // lock xe
         v.setAvailable(false);
         vehicleRepo.save(v);
 
@@ -66,7 +61,7 @@ public class RentalController {
         r.setVehicleId(vehicleId);
         r.setStationId(v.getStationId());
 
-        r.setStatus("PENDING");       // đã đặt nhưng chưa nhận
+        r.setStatus("PENDING");
         r.setStartTime(null);
         r.setEndTime(null);
         r.setTotalPrice(0.0);
@@ -76,9 +71,6 @@ public class RentalController {
         return r;
     }
 
-    // =======================
-    // 2. CHECK-IN (NHẬN XE)
-    // =======================
     @PostMapping("/{id}/checkin")
     public String checkin(@PathVariable String id) {
 
@@ -96,7 +88,6 @@ public class RentalController {
         return "Check-in success";
     }
 
-    // upload ảnh trước khi nhận
     @PostMapping("/{id}/upload-before")
     public String uploadBefore(@PathVariable String id,
                                @RequestParam MultipartFile file) throws Exception {
@@ -110,7 +101,6 @@ public class RentalController {
         return "Upload before success";
     }
 
-    // upload ảnh sau khi trả
     @PostMapping("/{id}/upload-after")
     public String uploadAfter(@PathVariable String id,
                               @RequestParam MultipartFile file) throws Exception {
@@ -124,9 +114,6 @@ public class RentalController {
         return "Upload after success";
     }
 
-    // =======================
-    // 3. TRẢ XE (CHECK-OUT)
-    // =======================
     @PostMapping("/{id}/return")
     public String returnVehicle(@PathVariable String id) {
 
@@ -158,7 +145,6 @@ public class RentalController {
         r.setTotalPrice(total);
         rentalRepo.save(r);
 
-        // mở xe lại cho trạm
         if (v != null) {
             v.setAvailable(true);
             vehicleRepo.save(v);
@@ -167,9 +153,6 @@ public class RentalController {
         return "Return success (total: " + total + " VND for " + minutes + " minutes)";
     }
 
-    // =======================
-    // 4. LỊCH SỬ THUÊ
-    // =======================
     @GetMapping("/my-history")
     public List<Rental> history() {
 
@@ -182,9 +165,6 @@ public class RentalController {
         return rentalRepo.findByUserId(user.getId());
     }
 
-    // =======================
-    // 5. THỐNG KÊ CÁ NHÂN
-    // =======================
     @GetMapping("/stats")
     public Object stats() {
 

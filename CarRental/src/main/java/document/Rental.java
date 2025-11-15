@@ -14,10 +14,8 @@ public class Rental {
     private String vehicleId;
     private String stationId;
 
-    // PENDING -> CHECKED_IN -> RETURNED
     private String status;
 
-    // thời gian tính bằng millis
     private Long startTime;
     private Long endTime;
 

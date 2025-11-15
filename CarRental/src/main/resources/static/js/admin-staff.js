@@ -5,33 +5,18 @@ document.addEventListener("DOMContentLoaded", function() {
     const modal = document.getElementById('addStaffModal');
     const closeButton = modal.querySelector('.close-button');
     const addStaffForm = document.getElementById('addStaffForm');
-
-    // Select cho bộ lọc và modal
     const stationFilterSelect = document.getElementById('stationFilter');
     const modalStationSelect = document.getElementById('modalStationId');
-
     const menuTemplate = document.getElementById('action-menu-template');
     let currentOpenMenu = null;
-    let stationsCache = []; // Lưu trữ danh sách trạm
-
-    // --- 1. Khởi chạy ---
-    loadStations(); // Tải danh sách trạm
-    loadStaff();    // Tải danh sách nhân viên
-
-    // --- 2. Tải danh sách trạm (cho bộ lọc và modal) ---
+    let stationsCache = [];
+    loadStations();
+    loadStaff();
     async function loadStations() {
         try {
-            // =================================================================
-            // BACKEND CALL: GET /api/stations
-            // Mục đích: Lấy danh sách trạm để điền vào dropdown.
-            // API này đã có sẵn trong StationController.java
-            // =================================================================
             const response = await fetch('/api/stations');
             if (!response.ok) throw new Error('Failed to fetch stations');
-
             stationsCache = await response.json();
-
-            // Xóa các option cũ (trừ option "Tất cả")
             stationFilterSelect.innerHTML = '<option value="all">Tất cả điểm thuê</option>';
             modalStationSelect.innerHTML = '<option value="">-- Chọn điểm thuê --</option>';
 
@@ -49,30 +34,8 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    // --- 3. Tải danh sách nhân viên ---
     async function loadStaff() {
         try {
-            // =================================================================
-            // BACKEND CALL: GET /api/admin/staff/all (Giả định)
-            // Mục đích: Lấy danh sách nhân viên (role="ROLE_STAFF" hoặc "ROLE_ADMIN").
-            // API này cần được tạo mới ở Backend.
-            //
-            // Backend cần trả về 1 mảng các đối tượng, ví dụ:
-            // [
-            //   {
-            //     "id": "staff_1", "fullName": "Nguyễn Văn A", "username": "nva",
-            //     "stationId": "station_1", "stationName": "Đang làm việc",
-            //     "role": "ROLE_ADMIN", "performance": 120, "status": "WORKING"
-            //   },
-            //   {
-            //     "id": "staff_2", "fullName": "Lê Thị B", "username": "ltb",
-            //     "stationId": "station_2", "stationName": "Q.1 Station",
-            //     "role": "ROLE_STAFF", "performance": 0, "status": "ON_LEAVE"
-            //   }
-            // ]
-            // =================================================================
-
-            // --- GIẢ LẬP DỮ LIỆU (Vì API chưa có) ---
             const fakeData = [
                 { "id": "1", "fullName": "Nguyễn Văn A", "username": "nva@station.com", "stationName": "Đang làm việc", "role": "Quản trị viên", "performance": 120, "status": "WORKING" },
                 { "id": "2", "fullName": "Lê Thị B", "username": "ltb@station.com", "stationName": "Q.1 Station", "role": "Quản trị viên", "performance": 0, "status": "WORKING" },
@@ -80,13 +43,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 { "id": "4", "fullName": "Phạm Văn C", "username": "pvc@station.com", "stationName": "Bình Thạnh St...", "role": "Nhân viên", "performance": 70, "status": "ON_LEAVE" },
                 { "id": "5", "fullName": "Trần Đình D", "username": "tdd@station.com", "stationName": "Bình Thạnh St...", "role": "Nhân viên", "performance": 0, "status": "RESIGNED" }
             ];
-            // --- KẾT THÚC GIẢ LẬP ---
 
-            // const response = await fetch('/api/admin/staff/all');
-            // const staffList = await response.json();
-            const staffList = fakeData; // Tạm thời dùng data giả
+            const staffList = fakeData;
 
-            staffTableBody.innerHTML = ''; // Xóa bảng cũ
+            staffTableBody.innerHTML = '';
 
             staffList.forEach(staff => {
                 const tr = document.createElement('tr');
@@ -97,15 +57,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 switch(staff.status) {
                     case 'WORKING':
                         statusText = 'Đang làm việc';
-                        statusClass = 'status-available'; // Xanh
+                        statusClass = 'status-available';
                         break;
                     case 'ON_LEAVE':
                         statusText = 'Nghỉ phép';
-                        statusClass = 'status-disabled'; // Đỏ
+                        statusClass = 'status-disabled';
                         break;
                     case 'RESIGNED':
                         statusText = 'Đã nghỉ việc';
-                        statusClass = 'status-inactive'; // Xám
+                        statusClass = 'status-inactive';
                         break;
                 }
 
@@ -129,9 +89,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    // --- 4. Xử lý Modal (Popup) ---
+
     addStaffBtn.onclick = function() {
-        addStaffForm.reset(); // Xóa form cũ
+        addStaffForm.reset();
         modal.style.display = "block";
     }
     closeButton.onclick = function() {
@@ -143,41 +103,21 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    // --- 5. Xử lý Form Thêm nhân viên mới ---
+
     addStaffForm.addEventListener('submit', async function(event) {
         event.preventDefault();
 
         const formData = new FormData(addStaffForm);
-        // Backend cần tạo DTO (Data Transfer Object) để nhận các trường này
         const staffData = {
             fullName: formData.get('fullName'),
             username: formData.get('username'),
             password: formData.get('password'),
-            stationId: formData.get('stationId'), // ID của trạm
-            role: formData.get('role') // "ROLE_STAFF" hoặc "ROLE_ADMIN"
+            stationId: formData.get('stationId'),
+            role: formData.get('role')
         };
 
         try {
-            // =================================================================
-            // BACKEND CALL: POST /api/admin/staff/add (Giả định)
-            // Mục đích: Tạo một User mới (với role) VÀ tạo 1 StaffProfile (với fullName, stationId).
-            // Backend cần xử lý việc tạo 2 record này.
-            // =================================================================
-            /*
-            const response = await fetch('/api/admin/staff/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(staffData)
-            });
 
-            if (response.ok) {
-                alert('Thêm nhân viên thành công!');
-                modal.style.display = 'none';
-                loadStaff(); // Tải lại bảng
-            } else {
-                alert('Có lỗi xảy ra. Không thể thêm nhân viên.');
-            }
-            */
 
             alert(`(Giả lập) Đã gọi API để tạo nhân viên: ${staffData.fullName}`);
             modal.style.display = 'none';
@@ -189,7 +129,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // --- 6. Xử lý Menu Thao tác "..." ---
     staffTableBody.addEventListener('click', function(event) {
         if (event.target.classList.contains('action-button')) {
             event.stopPropagation();
@@ -209,7 +148,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Tự động đóng menu khi click ra ngoài
     window.addEventListener('click', function() {
         if (currentOpenMenu) {
             currentOpenMenu.remove();

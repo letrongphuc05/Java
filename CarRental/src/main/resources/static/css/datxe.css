@@ -1,8 +1,8 @@
-/* General Styling */
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    background-color: #f4f7f6; /* Màu nền nhạt */
+    background-color: #f4f7f6;
     display: flex;
 }
 
@@ -11,7 +11,6 @@ body {
     width: 100%;
 }
 
-/* Sidebar Styling (Giữ nguyên) */
 .sidebar {
     width: 250px;
     background-color: #ffffff;
@@ -75,7 +74,6 @@ body {
     color: #ffffff;
 }
 
-/* Top Bar Styling (Giữ nguyên) */
 .top-bar {
     display: flex;
     justify-content: space-between;
@@ -123,7 +121,6 @@ body {
     color: #388e3c;
 }
 
-/* Content Area Styling */
 .content-area {
     flex-grow: 1;
     padding: 30px;
@@ -138,13 +135,12 @@ body {
     color: #333;
 }
 
-/* Card Styling (Dùng chung cho các khối nội dung) */
 .card {
     background-color: #ffffff;
     padding: 30px;
     border-radius: 15px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    margin-bottom: 30px; /* Thêm lại margin-bottom cho các card */
+    margin-bottom: 30px;
 }
 
 .card h2 {
@@ -154,9 +150,7 @@ body {
     color: #333;
 }
 
-/* Cụ thể cho phần Các điểm thuê (refined) */
 .rental-location-section {
-    /* Đảm bảo nó chiếm đủ không gian cần thiết, không cần flex-grow nhiều như trước */
 }
 
 .location-input-group {
@@ -176,7 +170,7 @@ body {
 
 .btn-find-location {
     padding: 12px 20px;
-    background-color: #4CAF50; /* Màu xanh lá */
+    background-color: #4CAF50;
     color: #ffffff;
     border: none;
     border-radius: 25px;
@@ -188,10 +182,6 @@ body {
 .btn-find-location:hover {
     background-color: #45a049;
 }
-
-/* ============================================
-   STATION LIST
-   ============================================ */
 
 .station-list {
     display: flex;
@@ -226,7 +216,6 @@ body {
     box-shadow: 0 3px 8px rgba(0,0,0,0.08);
 }
 
-/* Station được chọn */
 .station-item.active-station {
     background-color: #d7f8d7;
     border-color: #2e7d32;
@@ -242,7 +231,7 @@ body {
 
 .selected-location-display {
     padding: 10px 15px;
-    background-color: #e6ffe6; /* Nền xanh lá nhạt */
+    background-color: #e6ffe6;
     border: 1px solid #4CAF50;
     border-radius: 10px;
     font-size: 15px;
@@ -259,11 +248,10 @@ body {
 
 
 
-/* Available Vehicles Grid (Giữ nguyên như trước, nhưng giờ không nằm trong flex-container với điểm thuê) */
 .vehicle-grid {
-    display: grid; /* Quay lại grid để có nhiều cột */
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Có thể điều chỉnh minmax */
-    gap: 20px; /* Khoảng cách giữa các thẻ xe */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
 }
 
 .vehicle-card {
@@ -304,7 +292,6 @@ body {
     border-color: #2196F3;
 }
 
-/* Book Now Button Section (Giữ nguyên) */
 .book-now-action {
     display: flex;
     justify-content: center;
@@ -334,10 +321,9 @@ body {
 }
 
 
-/* Responsive Adjustments */
 @media (max-width: 992px) {
     .vehicle-grid {
-        grid-template-columns: 1fr; /* 1 cột trên màn hình nhỏ */
+        grid-template-columns: 1fr;
     }
 }
 

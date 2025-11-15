@@ -136,7 +136,6 @@ body, html {
     background-color: #2980b9;
 }
 
-/* ----- BẢNG DỮ LIỆU ----- */
 .data-table-container {
     background-color: white;
     border-radius: 8px;
@@ -258,7 +257,7 @@ table.data-table td {
     padding: 12px;
     border: 1px solid #ccc;
     border-radius: 6px;
-    box-sizing: border-box; /* Quan trọng */
+    box-sizing: border-box;
     font-size: 15px;
 }
 .status-pending {

@@ -1,4 +1,4 @@
-/* ===== BACKGROUND ===== */
+
 body {
     margin: 0;
     padding: 0;
@@ -11,37 +11,30 @@ body {
 }
 
 
-/* Thiết lập cơ bản cho trang */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #ffffff; /* Nền trắng như trong ảnh */
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Căn lề trên */
-    padding-top: 60px; /* Khoảng cách từ trên xuống */
-    margin: 0;
-    min-height: 100vh;
-}
 
-/* Thiết lập cơ bản cho trang */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background-color: #ffffff;
-
-    /* THAY ĐỔI: Dùng flex-direction: column để xếp dọc */
     display: flex;
-    flex-direction: column; /* Xếp header và form theo chiều dọc */
-    align-items: center; /* Căn giữa mọi thứ theo chiều ngang */
-
-    padding-top: 60px; /* Khoảng cách từ trên xuống */
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 60px;
     margin: 0;
     min-height: 100vh;
 }
 
-/* XÓA BỎ HOÀN TOÀN KHỐI .container { ... } */
 
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 
-/* Tiêu đề chính "EV Station" */
+    padding-top: 60px;
+    margin: 0;
+    min-height: 100vh;
+}
 .main-header {
     margin-bottom: 30px;
     display: flex;
@@ -185,32 +178,31 @@ input.input-error {
     background-color: #444;
 }
 
-/* Link "Quên mật khẩu?" */
+
 .forgot-password {
     text-align: center;
     margin-top: 18px;
 }
 
 .forgot-password a {
-    color: #333; /* Màu đen */
-    text-decoration: underline; /* Có gạch chân */
+    color: #333;
+    text-decoration: underline;
     font-size: 14px;
     font-weight: 500;
 }
 
-/* Link "Đăng ký" */
 .signup-link {
     text-align: center;
     margin-top: 25px;
     padding-top: 20px;
-    border-top: 1px solid #DCDCDC; /* Có 1 đường kẻ mờ ở trên */
+    border-top: 1px solid #DCDCDC;
     font-size: 14px;
     color: #555;
 }
 
 .signup-link a {
-    color: #333; /* Màu đen */
-    font-weight: 700; /* Rất đậm */
+    color: #333;
+    font-weight: 700;
     text-decoration: none;
 }
 

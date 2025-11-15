@@ -19,6 +19,11 @@ public class AdminController {
     public String showCustomerManagement() { return "admin-customers"; }
     @GetMapping("/staff")
     public String showStaffManagement() { return "admin-staff"; }
+    @GetMapping("/history")
+    public String showHistoryManagement() {
+        return "admin-history";
+    }
+
     @GetMapping("/reports")
     public String showReportsDashboard() { return "admin-reports"; }
 }

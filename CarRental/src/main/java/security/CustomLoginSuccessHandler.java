@@ -39,19 +39,15 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
         for (GrantedAuthority grantedAuthority : authorities) {
             String authorityName = grantedAuthority.getAuthority();
 
-            // Nếu là ADMIN, chuyển hướng đến trang quản lý xe
             if (authorityName.equals("ROLE_ADMIN")) {
-                return "/admin/vehicles"; // Đường dẫn admin
+                return "/admin/vehicles";
             }
 
-            // Nếu là STAFF (Nhân viên), chuyển hướng về trang chủ
-            // (Bạn có thể thay đổi "/home" thành "/staff/dashboard" nếu có)
             if (authorityName.equals("ROLE_STAFF")) {
-                return "/home"; // Đường dẫn trang chủ
+                return "/home";
             }
         }
 
-        // Mặc định cho tất cả vai trò khác (ví dụ ROLE_USER)
-        return "/home"; // Đường dẫn trang chủ
+        return "/home";
     }
 }

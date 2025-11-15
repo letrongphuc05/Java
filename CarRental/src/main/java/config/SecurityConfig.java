@@ -31,6 +31,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable());
 
         http
                 .authorizeHttpRequests(auth -> auth
@@ -51,7 +52,7 @@ public class SecurityConfig {
                 )
                 .rememberMe(remember -> remember
                         .rememberMeParameter("remember-me")
-                        .tokenValiditySeconds(7 * 24 * 60 * 60) // 7 ngày
+                        .tokenValiditySeconds(7 * 24 * 60 * 60)
                         .key("EVSTATION_REMEMBER_KEY")
                 )
                 .logout(l -> l
