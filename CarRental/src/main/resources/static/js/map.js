@@ -5,9 +5,6 @@ let router = null;
 
 let map;
 
-// ==============================
-// INIT MAP
-// ==============================
 function initMap() {
     map = L.map("map").setView([10.80, 106.72], 14);
 
@@ -17,9 +14,6 @@ function initMap() {
     getUserLocation();
 }
 
-// ==============================
-// GET USER LOCATION
-// ==============================
 function getUserLocation() {
     navigator.geolocation.getCurrentPosition(
         pos => {
@@ -43,9 +37,6 @@ function getUserLocation() {
     );
 }
 
-// ==============================
-// LOAD STATIONS FROM API
-// ==============================
 function loadStations() {
     fetch("/api/stations")
         .then(res => res.json())
@@ -55,32 +46,23 @@ function loadStations() {
         })
         .catch(() => showToast("❌ Lỗi tải danh sách trạm!"));
 }
-
-// ==============================
-// RENDER LIST + MAP MARKERS
-// ==============================
 function renderStations() {
 
     const list = document.getElementById("stationList");
     list.innerHTML = "";
 
     stations.forEach(st => {
-
-        // KHẮC PHỤC LỖI ID
-        const stationId = st._id;
-
-        // ===== TÍNH KHOẢNG CÁCH & ETA =====
+        const stationId = st.id;
         st.distance = haversine(userLat, userLng, st.latitude, st.longitude);
         st.eta = Math.round((st.distance / 30) * 60);
-
-        // ===== RANDOM OFFSET =====
         const offset = 0.00015;
         const lat = st.latitude + (Math.random() - 0.5) * offset;
         const lng = st.longitude + (Math.random() - 0.5) * offset;
 
-        // ===== RENDER SIDEBAR LIST =====
         list.innerHTML += `
-            <div class="location-item" onclick="openStation(${lat}, ${lng}, '${stationId}')">
+            <div class="location-item"
+                 onclick="openStation(${lat}, ${lng}, '${stationId}', \`${st.name}\`, ${st.distance.toFixed(2)}, ${st.availableCars}, ${st.eta})">
+
                 <div class="location-item-header">
                     <span class="station-title">${st.name}</span>
                 </div>
@@ -92,7 +74,6 @@ function renderStations() {
             </div>
         `;
 
-        // ===== RENDER MARKER =====
         const marker = L.marker([lat, lng]).addTo(map);
 
         marker.bindPopup(`
@@ -114,25 +95,30 @@ function renderStations() {
     });
 }
 
-// ==============================
-// OPEN POPUP
-// ==============================
-function openStation(lat, lng, stationId) {
+function openStation(lat, lng, stationId, name, distance, availableCars, eta) {
     map.setView([lat, lng], 16);
 
     L.popup()
         .setLatLng([lat, lng])
         .setContent(`
-            <b style="font-size:14px">Trạm được chọn</b><br><br>
-            <button onclick="routeTo(${lat}, ${lng})">🔄 Chỉ đường</button>
-            <button onclick="goToBooking('${stationId}')" style="margin-left:6px">🚲 Đặt xe</button>
+            <b style="font-size:14px">${name}</b><br>
+            📏 ${distance} km<br>
+            🚗 ${availableCars} xe<br>
+            ⏱ ${eta} phút<br><br>
+
+            <button style="padding:5px 10px"
+                    onclick="routeTo(${lat}, ${lng}); event.stopPropagation();">
+                🔄 Chỉ đường
+            </button>
+
+            <button style="padding:5px 10px; margin-left:8px"
+                    onclick="goToBooking('${stationId}'); event.stopPropagation();">
+                🚲 Đặt xe
+            </button>
         `)
         .openOn(map);
 }
 
-// ==============================
-// ROUTING
-// ==============================
 function routeTo(lat, lng) {
 
     if (router) map.removeControl(router);
@@ -148,16 +134,10 @@ function routeTo(lat, lng) {
     }).addTo(map);
 }
 
-// ==============================
-// MOVE TO BOOKING PAGE
-// ==============================
 function goToBooking(stationId) {
     window.location.href = `/datxe?stationId=${stationId}`;
 }
 
-// ==============================
-// DISTANCE CALC
-// ==============================
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -172,11 +152,12 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ==============================
-// TOAST
-// ==============================
 function showToast(msg) {
     const t = document.getElementById("toast");
+    if (!t) {
+        console.warn("Toast element not found!");
+        return;
+    }
     t.innerHTML = msg;
     t.className = "toast show";
 

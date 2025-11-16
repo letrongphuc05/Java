@@ -39,6 +39,7 @@ public class StationController {
             map.put("longitude", st.getLongitude());
             map.put("address", st.getAddress());
 
+            // Dòng quan trọng: Đếm số xe có sẵn và gửi cho frontend
             long count = vehicleRepo.countByStationIdAndAvailable(st.getId(), true);
             map.put("availableCars", count);
 
