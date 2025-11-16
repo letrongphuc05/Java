@@ -42,9 +42,8 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
             if (authorityName.equals("ROLE_ADMIN")) {
                 return "/admin/vehicles";
             }
-
             if (authorityName.equals("ROLE_STAFF")) {
-                return "/home";
+                return "/staff/station-grid";
             }
         }
 
