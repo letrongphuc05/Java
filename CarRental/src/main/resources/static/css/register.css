@@ -1,8 +1,7 @@
-/* Thiết lập nền giống trang home/datxe */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    background-color: #f4f7f6; /* Màu nền nhạt */
+    background-color: #f4f7f6;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -11,13 +10,13 @@ body {
     box-sizing: border-box;
 }
 
-/* Container để căn giữa form */
+
 .auth-container {
     width: 100%;
     max-width: 450px;
 }
 
-/* Tiêu đề "EV Station" */
+
 .auth-header {
     text-align: center;
     margin-bottom: 30px;
@@ -26,11 +25,11 @@ body {
 .auth-header h1 {
     font-size: 32px;
     font-weight: bold;
-    color: #388e3c; /* Màu xanh lá chủ đạo */
+    color: #388e3c;
     margin: 0;
 }
 
-/* Style cho form giống như .card */
+
 .card.auth-form-card {
     background-color: #ffffff;
     padding: 30px 40px;
@@ -47,7 +46,7 @@ body {
     margin-bottom: 25px;
 }
 
-/* Style cho các form group */
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -60,12 +59,12 @@ body {
     font-size: 15px;
 }
 
-/* Style cho input giống .location-search-input */
+
 .form-input {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid #ddd;
-    border-radius: 25px; /* Bo tròn giống input tìm kiếm */
+    border-radius: 25px;
     box-sizing: border-box;
     font-size: 16px;
     outline: none;
@@ -76,14 +75,14 @@ body {
     border-color: #388e3c;
 }
 
-/* Style cho nút submit giống .btn-book-now */
+
 .btn-submit {
     width: 100%;
     padding: 14px 25px;
-    background-color: #4CAF50; /* Màu xanh lá của nút */
+    background-color: #4CAF50;
     color: #ffffff;
     border: none;
-    border-radius: 30px; /* Bo tròn giống nút */
+    border-radius: 30px;
     font-size: 18px;
     font-weight: bold;
     cursor: pointer;
@@ -96,7 +95,7 @@ body {
     background-color: #45a049;
 }
 
-/* Các link bên dưới */
+
 .auth-links {
     text-align: center;
     margin-top: 20px;
@@ -117,14 +116,14 @@ body {
     color: #388e3c;
 }
 
-/* Bổ sung style cho thông báo lỗi của Register */
+
 .error-message {
-    color: #e53935; /* Màu đỏ */
+    color: #e53935;
     font-size: 13px;
     margin-top: 5px;
     padding-left: 10px;
 }
 
 input.input-error {
-    border: 1px solid #e53935 !important; /* Viền đỏ khi lỗi */
+    border: 1px solid #e53935 !important;
 }
