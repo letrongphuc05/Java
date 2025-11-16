@@ -37,22 +37,29 @@ public class RentalController {
         return auth != null ? auth.getName() : null;
     }
 
+    // ========================================
+    // BOOK
+    // ========================================
     @PostMapping("/book")
     public Object book(@RequestParam String vehicleId) {
 
         String username = getCurrentUsername();
-        if (username == null) return "Unauthorized";
+        if (username == null)
+            return Map.of("error", "Unauthorized");
 
         User user = userRepo.findByUsername(username);
-        if (user == null) return "User not found";
+        if (user == null)
+            return Map.of("error", "User not found");
 
         if (user.getLicenseData() == null || user.getIdCardData() == null) {
-            return "You must upload License and ID Card before booking";
+            return Map.of("error", "You must upload License and ID Card before booking");
         }
 
         Vehicle v = vehicleRepo.findById(vehicleId).orElse(null);
-        if (v == null || !v.isAvailable()) return "Vehicle not available";
+        if (v == null || !v.isAvailable())
+            return Map.of("error", "Vehicle not available");
 
+        // Khoá xe
         v.setAvailable(false);
         vehicleRepo.save(v);
 
@@ -60,7 +67,6 @@ public class RentalController {
         r.setUserId(user.getId());
         r.setVehicleId(vehicleId);
         r.setStationId(v.getStationId());
-
         r.setStatus("PENDING");
         r.setStartTime(null);
         r.setEndTime(null);
@@ -68,61 +74,76 @@ public class RentalController {
 
         rentalRepo.save(r);
 
-        return r;
+        return Map.of(
+                "id", r.getId(),
+                "status", r.getStatus(),
+                "vehicleId", r.getVehicleId(),
+                "stationId", r.getStationId()
+        );
     }
 
+    // ========================================
+    // CHECK IN
+    // ========================================
     @PostMapping("/{id}/checkin")
-    public String checkin(@PathVariable String id) {
+    public Object checkin(@PathVariable String id) {
 
         Rental r = rentalRepo.findById(id).orElse(null);
-        if (r == null) return "Rental not found";
+        if (r == null) return Map.of("error", "Rental not found");
 
-        if (!"PENDING".equals(r.getStatus())) {
-            return "Invalid state. Rental must be PENDING to check-in.";
-        }
+        if (!"PENDING".equals(r.getStatus()))
+            return Map.of("error", "Invalid state. Rental must be PENDING to check-in.");
 
         r.setStatus("CHECKED_IN");
         r.setStartTime(System.currentTimeMillis());
         rentalRepo.save(r);
 
-        return "Check-in success";
+        return Map.of("message", "Check-in success");
     }
 
+    // ========================================
+    // UPLOAD BEFORE
+    // ========================================
     @PostMapping("/{id}/upload-before")
-    public String uploadBefore(@PathVariable String id,
+    public Object uploadBefore(@PathVariable String id,
                                @RequestParam MultipartFile file) throws Exception {
 
         Rental r = rentalRepo.findById(id).orElse(null);
-        if (r == null) return "Rental not found";
+        if (r == null) return Map.of("error", "Rental not found");
 
         r.setCheckinPhoto(new Binary(BsonBinarySubType.BINARY, file.getBytes()));
         rentalRepo.save(r);
 
-        return "Upload before success";
+        return Map.of("message", "Upload before success");
     }
 
+    // ========================================
+    // UPLOAD AFTER
+    // ========================================
     @PostMapping("/{id}/upload-after")
-    public String uploadAfter(@PathVariable String id,
+    public Object uploadAfter(@PathVariable String id,
                               @RequestParam MultipartFile file) throws Exception {
 
         Rental r = rentalRepo.findById(id).orElse(null);
-        if (r == null) return "Rental not found";
+        if (r == null) return Map.of("error", "Rental not found");
 
         r.setCheckoutPhoto(new Binary(BsonBinarySubType.BINARY, file.getBytes()));
         rentalRepo.save(r);
 
-        return "Upload after success";
+        return Map.of("message", "Upload after success");
     }
 
+    // ========================================
+    // RETURN VEHICLE
+    // ========================================
     @PostMapping("/{id}/return")
-    public String returnVehicle(@PathVariable String id) {
+    public Object returnVehicle(@PathVariable String id) {
 
         Rental r = rentalRepo.findById(id).orElse(null);
-        if (r == null) return "Rental not found";
+        if (r == null) return Map.of("error", "Rental not found");
 
-        if (!"CHECKED_IN".equals(r.getStatus())) {
-            return "Invalid state. Rental must be CHECKED_IN to return.";
-        }
+        if (!"CHECKED_IN".equals(r.getStatus()))
+            return Map.of("error", "Invalid state. Rental must be CHECKED_IN to return.");
 
         r.setEndTime(System.currentTimeMillis());
 
@@ -133,11 +154,7 @@ public class RentalController {
         }
 
         Vehicle v = vehicleRepo.findById(r.getVehicleId()).orElse(null);
-        double pricePerMinute = 1000;
-
-        if (v != null) {
-            pricePerMinute = v.getPrice();
-        }
+        double pricePerMinute = (v != null) ? v.getPrice() : 1000;
 
         double total = minutes * pricePerMinute;
 
@@ -150,9 +167,16 @@ public class RentalController {
             vehicleRepo.save(v);
         }
 
-        return "Return success (total: " + total + " VND for " + minutes + " minutes)";
+        return Map.of(
+                "message", "Return success",
+                "total", total,
+                "minutes", minutes
+        );
     }
 
+    // ========================================
+    // MY HISTORY
+    // ========================================
     @GetMapping("/my-history")
     public List<Rental> history() {
 
@@ -165,6 +189,9 @@ public class RentalController {
         return rentalRepo.findByUserId(user.getId());
     }
 
+    // ========================================
+    // STATS
+    // ========================================
     @GetMapping("/stats")
     public Object stats() {
 
@@ -204,4 +231,64 @@ public class RentalController {
                 "peakHourTrips", peakTrips
         );
     }
+
+    // ========================================
+    // REQUEST RETURN
+    // ========================================
+    @PostMapping("/{id}/request-return")
+    public Object requestReturn(@PathVariable String id) {
+
+        Rental rental = rentalRepo.findById(id).orElse(null);
+        if (rental == null) return Map.of("error", "RENTAL_NOT_FOUND");
+
+        if (!"ONGOING".equals(rental.getStatus()) && !"CHECKED_IN".equals(rental.getStatus())) {
+            return Map.of("error", "INVALID_STATUS");
+        }
+
+        rental.setEndTime(System.currentTimeMillis());
+        rental.setStatus("WAITING_STAFF_CONFIRM");
+
+        long diffMin = (rental.getEndTime() - rental.getStartTime()) / (1000 * 60);
+        if (diffMin <= 0) diffMin = 1;
+
+        Vehicle v = vehicleRepo.findById(rental.getVehicleId()).orElse(null);
+        double price = (v != null ? v.getPrice() : 1000);
+
+        rental.setTotalPrice(diffMin * price);
+
+        rentalRepo.save(rental);
+
+        return Map.of("message", "REQUEST_RETURN_SUBMITTED");
+    }
+
+    // ========================================
+    // UPLOAD CONTRACT
+    // ========================================
+    @PostMapping("/{id}/upload-contract")
+    public Object uploadContract(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file
+    ) throws Exception {
+
+        Rental rental = rentalRepo.findById(id).orElse(null);
+        if (rental == null) return Map.of("error", "RENTAL_NOT_FOUND");
+
+        rental.setContractData(new org.bson.types.Binary(
+                org.bson.BsonBinarySubType.BINARY,
+                file.getBytes()
+        ));
+
+        rentalRepo.save(rental);
+
+        return Map.of("message", "CONTRACT_UPLOADED");
+    }
+
+    // ========================================
+    // GET RENTAL
+    // ========================================
+    @GetMapping("/{id}")
+    public Rental getRentalById(@PathVariable String id) {
+        return rentalRepo.findById(id).orElse(null);
+    }
+
 }

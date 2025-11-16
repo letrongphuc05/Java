@@ -9,6 +9,15 @@ function getStationId() {
 let selectedStation = getStationId();
 let selectedVehicle = null;
 
+async function checkLogin() {
+    try {
+        const res = await fetch("/api/renter/profile");
+        return res.ok;
+    } catch {
+        return false;
+    }
+}
+
 // ===============================
 // LOAD DANH SÁCH TRẠM
 // ===============================
@@ -56,13 +65,13 @@ async function loadStations() {
             if (stObj) {
                 document.getElementById("selected-station").innerText = stObj.name;
 
-                const items = document.querySelectorAll(".station-item");
-                items.forEach(item => {
-                    if (item.innerText.includes(stObj.name)) {
-                        item.classList.add("active-station");
-                        item.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }
-                });
+                document.querySelectorAll(".station-item")
+                    .forEach(el => {
+                        if (el.querySelector("b").innerText === stObj.name) {
+                            el.classList.add("active-station");
+                            el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }
+                    });
 
                 loadVehicles();
             }
@@ -135,7 +144,17 @@ async function loadVehicles() {
 // ĐẶT XE
 // ===============================
 async function bookNow() {
-    if (!selectedVehicle) return alert("Bạn phải chọn 1 xe trước khi đặt!");
+    const loggedIn = await checkLogin();
+    if (!loggedIn) {
+        alert("Bạn cần đăng nhập để đặt xe!");
+        window.location.href = "/login";
+        return;
+    }
+
+    if (!selectedVehicle) {
+        alert("Bạn phải chọn 1 xe trước khi đặt!");
+        return;
+    }
 
     try {
         const form = new FormData();
@@ -146,17 +165,23 @@ async function bookNow() {
             body: form
         });
 
-        if (!res.ok) {
-            alert("Đặt xe thất bại!");
-            return;
+        const text = await res.text();
+
+        try {
+            const rental = JSON.parse(text);
+
+            if (!rental || !rental.id) {
+                alert("Lỗi từ server!");
+                return;
+            }
+
+            window.location.href = `/thanhtoan?rentalId=${rental.id}`;
+        } catch (err) {
+            alert(text);
         }
 
-        const rental = await res.json();
-        alert("Đặt xe thành công! Mã thuê: " + rental.id);
-
-        loadVehicles();
-
     } catch (e) {
+        console.error("Lỗi khi đặt xe:", e);
         alert("Có lỗi khi đặt xe.");
     }
 }

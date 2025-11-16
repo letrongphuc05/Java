@@ -53,4 +53,14 @@ public class Rental {
 
     public double getTotalPrice() { return totalPrice; }
     public void setTotalPrice(double totalPrice) { this.totalPrice = totalPrice; }
+
+    private double damageFee;
+    private org.bson.types.Binary contractData;
+
+    public double getDamageFee() {return damageFee;}
+    public void setDamageFee(double damageFee) {this.damageFee = damageFee;}
+
+    public org.bson.types.Binary getContractData() {return contractData;}
+    public void setContractData(org.bson.types.Binary contractData) {this.contractData = contractData;}
+
 }

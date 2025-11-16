@@ -292,6 +292,12 @@ body {
     border-color: #2196F3;
 }
 
+.vehicle-card.selected {
+    border: 2px solid #1f8b1f;
+    background-color: #e9ffe9;
+    transform: scale(1.02);
+}
+
 .book-now-action {
     display: flex;
     justify-content: center;

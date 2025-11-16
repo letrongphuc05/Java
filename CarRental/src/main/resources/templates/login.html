@@ -29,7 +29,8 @@
             Đăng ký thành công, vui lòng đăng nhập.
         </div>
 
-        <form th:action="@{/login}" method="post">
+        <!-- FIX QUAN TRỌNG: đổi /login → /login-process -->
+        <form th:action="@{/login-process}" method="post">
             <div class="form-group">
                 <label for="username">Tên đăng nhập</label>
                 <input type="text" id="username" name="username" class="form-input" required>

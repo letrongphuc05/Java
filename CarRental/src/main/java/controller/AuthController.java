@@ -3,36 +3,44 @@ package CarRental.example.controller;
 import CarRental.example.document.User;
 import CarRental.example.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 
-@RestController
-@RequestMapping("/api/auth")
+@Controller
 public class AuthController {
 
-    private final UserRepository repo;
-    private final PasswordEncoder encoder;
+    private final UserRepository userRepo;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthController(UserRepository repo, PasswordEncoder encoder) {
-        this.repo = repo;
-        this.encoder = encoder;
+    public AuthController(UserRepository userRepo, PasswordEncoder passwordEncoder) {
+        this.userRepo = userRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    @PostMapping("/register")
-    public String register(@RequestParam String username,
-                           @RequestParam String password) {
+    // ==========================
+    // REGISTER PAGE
+    // ==========================
+    @GetMapping("/register")
+    public String registerPage() {
+        return "register";
+    }
 
-        if (repo.findByUsername(username) != null) {
-            return "Username exists";
+    // ==========================
+    // ĐĂNG KÝ USER
+    // ==========================
+    @PostMapping("/register")
+    public String register(User user, Model model) {
+
+        if (userRepo.findByUsername(user.getUsername()) != null) {
+            model.addAttribute("error", "Tên đăng nhập đã tồn tại!");
+            return "register";
         }
 
-        User u = new User();
-        u.setUsername(username);
-        u.setPassword(encoder.encode(password));
-        u.setRole("ROLE_USER");
-        u.setEnabled(true);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userRepo.save(user);
 
-        repo.save(u);
-
-        return "Register success";
+        return "redirect:/login?registered=true";
     }
 }

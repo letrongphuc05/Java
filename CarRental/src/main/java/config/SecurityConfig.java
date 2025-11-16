@@ -1,85 +1,90 @@
 package CarRental.example.config;
 
-import CarRental.example.document.User;
-import CarRental.example.repository.UserRepository;
-import CarRental.example.security.CustomLoginSuccessHandler;
 import CarRental.example.security.CustomUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import CarRental.example.security.CustomLoginSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
-    @Autowired
-    private CustomLoginSuccessHandler customLoginSuccessHandler;
 
-    @Bean
-    public UserDetailsService userDetailsService(UserRepository repo) {
-        return new CustomUserDetailsService(repo);
+    private final CustomUserDetailsService customUserDetailsService;
+
+    public SecurityConfig(CustomUserDetailsService customUserDetailsService) {
+        this.customUserDetailsService = customUserDetailsService;
     }
 
+    // =======================
+    // Password Encoder
+    // =======================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // =======================
+    // Authentication Provider
+    // =======================
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable());
-
-        http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/register", "/api/auth/**", "/css/**", "/js/**").permitAll()
-                        .requestMatchers("/api/renter/**", "/api/rentals/**").hasRole("USER")
-                        .requestMatchers("/admin/**",
-                                "/api/vehicles/admin/**",
-                                "/api/stations/admin/**")
-                        .hasRole("ADMIN")
-                        .requestMatchers("/staff/**").hasRole("STAFF")
-                        .anyRequest().authenticated()
-                )
-                .formLogin(f -> f
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .successHandler(customLoginSuccessHandler)
-                        .permitAll()
-                )
-                .rememberMe(remember -> remember
-                        .rememberMeParameter("remember-me")
-                        .tokenValiditySeconds(7 * 24 * 60 * 60)
-                        .key("EVSTATION_REMEMBER_KEY")
-                )
-                .logout(l -> l
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                );
-
-        return http.build();
+    public DaoAuthenticationProvider authProvider() {
+        DaoAuthenticationProvider auth = new DaoAuthenticationProvider();
+        auth.setUserDetailsService(customUserDetailsService);
+        auth.setPasswordEncoder(passwordEncoder());
+        return auth;
     }
 
+    // =======================
+    // Security Filter Chain
+    // =======================
     @Bean
-    public CommandLineRunner initDefaultUsers(UserRepository repo, PasswordEncoder encoder) {
-        return args -> {
-            if (repo.findByUsername("admin") == null) {
-                User admin = new User();
-                admin.setUsername("admin");
-                admin.setPassword(encoder.encode("admin"));
-                admin.setRole("ROLE_ADMIN");
-                repo.save(admin);
-            }
-            if (repo.findByUsername("staff") == null) {
-                User staff = new User();
-                staff.setUsername("staff");
-                staff.setPassword(encoder.encode("staff"));
-                staff.setRole("ROLE_STAFF");
-                repo.save(staff);
-            }
-        };
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        http.csrf(csrf -> csrf.disable());
+
+        http.authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/home", "/register", "/css/**", "/js/**", "/images/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .formLogin(login -> login
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/home", true)
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/home?logout")
+                        .permitAll()
+                );
+
+
+        http.formLogin(login -> login
+                .loginPage("/login")
+                .loginProcessingUrl("/login-process")
+                .successHandler(new CustomLoginSuccessHandler())
+                .failureUrl("/login?error=true")
+                .permitAll()
+        );
+
+        http.logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/home")
+                .clearAuthentication(true)
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll()
+        );
+
+        http.sessionManagement(sess -> sess
+                .invalidSessionUrl("/home")
+        );
+
+        return http.build();
     }
 }
