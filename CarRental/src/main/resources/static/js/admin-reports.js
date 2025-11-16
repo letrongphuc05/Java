@@ -32,8 +32,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
         try {
             const chartData = {
-                labels: ['70', '95', '100', '115', '180', '210', '280'], // Các mốc (ngày)
-                values: [2, 9, 7, 28, 25, 35, 40] // Doanh thu (triệu)
+                labels: ['70', '95', '100', '115', '180', '210', '280'],
+                values: [2, 9, 7, 28, 25, 35, 40]
             };
 
             if (revenueChartInstance) {
@@ -55,7 +55,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false
+
+                    maintainAspectRatio: true
                 }
             });
         } catch (error) {
@@ -68,8 +69,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
         try {
             const peakData = {
-                labels: ['7h', '5h', '5.5h', '6h', '6.5h', '7h', '7.5h'], // Các mốc giờ
-                values: [5.0, 7.0, 7.0, 5.9, 1.0, 0.0, 16.0] // % số chuyến
+                labels: ['7h', '5h', '5.5h', '6h', '6.5h', '7h', '7.5h'],
+                values: [5.0, 7.0, 7.0, 5.9, 1.0, 0.0, 16.0]
             };
 
             if (peakHoursChartInstance) {
@@ -89,7 +90,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    // === SỬA DÒNG NÀY ===
+                    maintainAspectRatio: true,
                     plugins: {
                         legend: {
                             display: false

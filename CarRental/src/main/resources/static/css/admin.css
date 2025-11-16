@@ -396,12 +396,15 @@ table.data-table td.actions {
 .btn-secondary:hover {
     background-color: #e0e0e0;
 }
+
 .chart-grid-container {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    /* Đổi từ 2fr 1fr thành 1fr 1fr để chia đều 50/50 */
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
     margin-top: 20px;
 }
+
 .chart-grid-left, .chart-grid-right {
     display: flex;
     flex-direction: column;

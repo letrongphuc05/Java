@@ -8,20 +8,8 @@
 <body>
 
 <div class="admin-container">
-    <nav class="sidebar">
-        <div class="sidebar-header">
-            <span class="logo">⚡️</span>
-            <h2>EV Station</h2>
-        </div>
-        <ul class="sidebar-nav">
-            <li><a href="#">Bảng điều khiển</a></li>
-            <li><a th:href="@{/admin/vehicles}">Quản lý độ xe</a></li>
-            <li><a th:href="@{/admin/stations}">Quản lý điểm thuê</a></li>
-            <li><a th:href="@{/admin/customers}">Khách hàng</a></li>
-            <li><a th:href="@{/admin/staff}">Nhân viên</a></li>
-            <li><a th:href="@{/admin/reports}" class="active">Báo cáo</a></li>
-        </ul>
-    </nav>
+
+    <div th:replace="~{fragments/admin-nav :: sidebar(activePage='reports')}"></div>
 
     <div class="main-content">
         <header class="content-header">
@@ -47,7 +35,7 @@
                 <div class="kpi-card">
                     <h3>Tỷ lệ sử dụng trung bình</h3>
                     <div class="value" id="kpi-utilization">---%</div>
-                    <div class="change" id="kpi-utilization-change">📊</div>
+                    <div class="change"id="kpi-utilization-change">📊</div>
                 </div>
             </div>
 

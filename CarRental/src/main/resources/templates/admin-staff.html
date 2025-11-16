@@ -8,20 +8,7 @@
 <body>
 
 <div class="admin-container">
-    <nav class="sidebar">
-        <div class="sidebar-header">
-            <span class="logo">⚡️</span>
-            <h2>EV Station</h2>
-        </div>
-        <ul class="sidebar-nav">
-            <li><a href="#">Bảng điều khiển</a></li>
-            <li><a th:href="@{/admin/vehicles}">Quản lý độ xe</a></li>
-            <li><a th:href="@{/admin/stations}">Quản lý điểm thuê</a></li>
-            <li><a th:href="@{/admin/customers}">Khách hàng</a></li>
-            <li><a th:href="@{/admin/staff}" class="active">Nhân viên</a></li>
-            <li><a href="#">Báo cáo</a></li>
-        </ul>
-    </nav>
+    <div th:replace="~{fragments/admin-nav :: sidebar(activePage='staff')}"></div>
 
     <div class="main-content">
         <header class="content-header">
@@ -110,10 +97,47 @@
     </div>
 </div>
 
+<div id="editStaffModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Cập nhật thông tin nhân viên</h2>
+            <span class="close-button">&times;</span>
+        </div>
+        <form id="editStaffForm">
+            <input type="hidden" id="edit-staffId" name="id">
+
+            <div class="form-group">
+                <label for="edit-fullName">Họ tên</label>
+                <input type="text" id="edit-fullName" name="fullName" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-username">Tên đăng nhập (Username)</label>
+                <input type="text" id="edit-username" name="username" readonly>
+                <small>Không thể thay đổi tên đăng nhập.</small>
+            </div>
+            <div class="form-group">
+                <label for="edit-password">Mật khẩu mới (Bỏ trống nếu không đổi)</label>
+                <input type="password" id="edit-password" name="password">
+            </div>
+            <div class="form-group">
+                <label for="edit-modalStationId">Điểm làm việc (Điều phối)</label>
+                <select id="edit-modalStationId" name="stationId" required>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-role">Vai trò</label>
+                <select id="edit-role" name="role" required>
+                    <option value="ROLE_STAFF">Nhân viên (Staff)</option>
+                    <option value="ROLE_ADMIN">Quản trị (Admin)</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">Cập nhật</button>
+        </form>
+    </div>
+</div>
 <div id="action-menu-template" style="display: none;">
     <div class="action-menu">
-        <a href="#" class="view-details">Xem chi tiết</a>
-        <a href="#" class="edit-staff">Sửa thông tin</a>
+        <a href="#" class="edit-staff">Sửa thông tin (Điều phối)</a>
         <a href="#" class="toggle-status danger">Thay đổi trạng thái</a>
     </div>
 </div>
