@@ -1,35 +1,34 @@
 package CarRental.example.controller;
 
-import CarRental.example.document.Rental;
-import CarRental.example.document.User;
+import CarRental.example.document.RentalRecord;
 import CarRental.example.document.Vehicle;
-import CarRental.example.repository.RentalRepository;
-import CarRental.example.repository.UserRepository;
+import CarRental.example.repository.RentalRecordRepository;
 import CarRental.example.repository.VehicleRepository;
-import org.bson.BsonBinarySubType;
-import org.bson.types.Binary;
+import CarRental.example.service.SequenceGeneratorService;
+import CarRental.example.service.VehicleService;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @RestController
-@RequestMapping("/api/rentals")
+@RequestMapping("/api/rental")
 public class RentalController {
 
-    private final RentalRepository rentalRepo;
+    private final RentalRecordRepository rentalRepo;
     private final VehicleRepository vehicleRepo;
-    private final UserRepository userRepo;
-
-    public RentalController(RentalRepository rentalRepo,
+    private final SequenceGeneratorService sequence;
+    private final VehicleService vehicleService;
+    public RentalController(RentalRecordRepository rentalRepo,
                             VehicleRepository vehicleRepo,
-                            UserRepository userRepo) {
+                            SequenceGeneratorService sequence, VehicleService vehicleService) {
         this.rentalRepo = rentalRepo;
         this.vehicleRepo = vehicleRepo;
-        this.userRepo = userRepo;
+        this.sequence = sequence;
+        this.vehicleService = vehicleService;
     }
 
     private String getCurrentUsername() {
@@ -37,258 +36,67 @@ public class RentalController {
         return auth != null ? auth.getName() : null;
     }
 
-    // ========================================
-    // BOOK
-    // ========================================
-    @PostMapping("/book")
-    public Object book(@RequestParam String vehicleId) {
+    @PostMapping("/checkout")
+    public Map<String, Object> checkout(@RequestBody Map<String, Object> req) {
 
-        String username = getCurrentUsername();
-        if (username == null)
-            return Map.of("error", "Unauthorized");
-
-        User user = userRepo.findByUsername(username);
-        if (user == null)
-            return Map.of("error", "User not found");
-
-        if (user.getLicenseData() == null || user.getIdCardData() == null) {
-            return Map.of("error", "You must upload License and ID Card before booking");
-        }
+        String vehicleId = (String) req.get("vehicleId");
+        String stationId = (String) req.get("stationId");
 
         Vehicle v = vehicleRepo.findById(vehicleId).orElse(null);
-        if (v == null || !v.isAvailable())
-            return Map.of("error", "Vehicle not available");
-
-        // Khoá xe
-        v.setAvailable(false);
-        vehicleRepo.save(v);
-
-        Rental r = new Rental();
-        r.setUserId(user.getId());
-        r.setVehicleId(vehicleId);
-        r.setStationId(v.getStationId());
-        r.setStatus("PENDING");
-        r.setStartTime(null);
-        r.setEndTime(null);
-        r.setTotalPrice(0.0);
-
-        rentalRepo.save(r);
-
-        return Map.of(
-                "id", r.getId(),
-                "status", r.getStatus(),
-                "vehicleId", r.getVehicleId(),
-                "stationId", r.getStationId()
-        );
-    }
-
-    // ========================================
-    // CHECK IN
-    // ========================================
-    @PostMapping("/{id}/checkin")
-    public Object checkin(@PathVariable String id) {
-
-        Rental r = rentalRepo.findById(id).orElse(null);
-        if (r == null) return Map.of("error", "Rental not found");
-
-        if (!"PENDING".equals(r.getStatus()))
-            return Map.of("error", "Invalid state. Rental must be PENDING to check-in.");
-
-        r.setStatus("CHECKED_IN");
-        r.setStartTime(System.currentTimeMillis());
-        rentalRepo.save(r);
-
-        return Map.of("message", "Check-in success");
-    }
-
-    // ========================================
-    // UPLOAD BEFORE
-    // ========================================
-    @PostMapping("/{id}/upload-before")
-    public Object uploadBefore(@PathVariable String id,
-                               @RequestParam MultipartFile file) throws Exception {
-
-        Rental r = rentalRepo.findById(id).orElse(null);
-        if (r == null) return Map.of("error", "Rental not found");
-
-        r.setCheckinPhoto(new Binary(BsonBinarySubType.BINARY, file.getBytes()));
-        rentalRepo.save(r);
-
-        return Map.of("message", "Upload before success");
-    }
-
-    // ========================================
-    // UPLOAD AFTER
-    // ========================================
-    @PostMapping("/{id}/upload-after")
-    public Object uploadAfter(@PathVariable String id,
-                              @RequestParam MultipartFile file) throws Exception {
-
-        Rental r = rentalRepo.findById(id).orElse(null);
-        if (r == null) return Map.of("error", "Rental not found");
-
-        r.setCheckoutPhoto(new Binary(BsonBinarySubType.BINARY, file.getBytes()));
-        rentalRepo.save(r);
-
-        return Map.of("message", "Upload after success");
-    }
-
-    // ========================================
-    // RETURN VEHICLE
-    // ========================================
-    @PostMapping("/{id}/return")
-    public Object returnVehicle(@PathVariable String id) {
-
-        Rental r = rentalRepo.findById(id).orElse(null);
-        if (r == null) return Map.of("error", "Rental not found");
-
-        if (!"CHECKED_IN".equals(r.getStatus()))
-            return Map.of("error", "Invalid state. Rental must be CHECKED_IN to return.");
-
-        r.setEndTime(System.currentTimeMillis());
-
-        long minutes = 1;
-        if (r.getStartTime() != null) {
-            minutes = (r.getEndTime() - r.getStartTime()) / 60000;
-            if (minutes <= 0) minutes = 1;
+        if (v == null) {
+            return Map.of("error", "Vehicle not found");
         }
 
-        Vehicle v = vehicleRepo.findById(r.getVehicleId()).orElse(null);
-        double pricePerMinute = (v != null) ? v.getPrice() : 1000;
+        Map<String, Object> data = new HashMap<>();
+        data.put("vehicleId", v.getId());
+        data.put("vehicleName", v.getBrand());
+        data.put("price", v.getPrice());
+        data.put("stationId", stationId);
 
-        double total = minutes * pricePerMinute;
-
-        r.setStatus("RETURNED");
-        r.setTotalPrice(total);
-        rentalRepo.save(r);
-
-        if (v != null) {
-            v.setAvailable(true);
-            vehicleRepo.save(v);
-        }
-
-        return Map.of(
-                "message", "Return success",
-                "total", total,
-                "minutes", minutes
-        );
+        return data;
     }
 
-    // ========================================
-    // MY HISTORY
-    // ========================================
-    @GetMapping("/my-history")
-    public List<Rental> history() {
+    @PostMapping("/create")
+    public Map<String, Object> createRental(@RequestBody Map<String, Object> req) {
 
         String username = getCurrentUsername();
-        if (username == null) return List.of();
+        if (username == null) return Map.of("error", "Unauthorized");
 
-        User user = userRepo.findByUsername(username);
-        if (user == null) return List.of();
+        String vehicleId = (String) req.get("vehicleId");
+        String stationId = (String) req.get("stationId");
 
-        return rentalRepo.findByUserId(user.getId());
-    }
+        double amount;
+        Object rawAmount = req.get("amount");
+        if (rawAmount instanceof Integer) {
+            amount = ((Integer) rawAmount).doubleValue();
+        } else {
+            amount = (double) rawAmount;
+        }
 
-    // ========================================
-    // STATS
-    // ========================================
-    @GetMapping("/stats")
-    public Object stats() {
+        long seq = sequence.getNextSequence("rentalCounter");
+        String rentalId = "rental" + seq;
 
-        String username = getCurrentUsername();
-        if (username == null) return Map.of();
+        RentalRecord record = new RentalRecord();
+        record.setId(rentalId);
+        record.setUsername(username);
+        record.setVehicleId(vehicleId);
+        record.setStationId(stationId);
+        record.setStartTime(LocalDateTime.now());
+        record.setTotal(amount);
 
-        User user = userRepo.findByUsername(username);
-        if (user == null) return Map.of();
+        rentalRepo.save(record);
 
-        List<Rental> list = rentalRepo.findByUserId(user.getId());
-
-        long totalTrips = list.size();
-        double totalSpent = list.stream()
-                .mapToDouble(Rental::getTotalPrice)
-                .sum();
-
-        long totalMinutes = list.stream()
-                .filter(r -> r.getStartTime() != null && r.getEndTime() != null)
-                .mapToLong(r -> (r.getEndTime() - r.getStartTime()) / 60000)
-                .filter(m -> m > 0)
-                .sum();
-
-        double avgMinutes = totalTrips > 0 ? (double) totalMinutes / totalTrips : 0.0;
-
-        long peakTrips = list.stream()
-                .filter(r -> r.getStartTime() != null)
-                .filter(r -> {
-                    long hour = (r.getStartTime() / 3600000) % 24;
-                    return hour >= 17 && hour <= 19;
-                })
-                .count();
+        vehicleRepo.updateAvailable(vehicleId, false);
 
         return Map.of(
-                "totalTrips", totalTrips,
-                "totalSpent", totalSpent,
-                "avgMinutesPerTrip", avgMinutes,
-                "peakHourTrips", peakTrips
+                "status", "success",
+                "rentalId", rentalId
         );
     }
 
-    // ========================================
-    // REQUEST RETURN
-    // ========================================
-    @PostMapping("/{id}/request-return")
-    public Object requestReturn(@PathVariable String id) {
-
-        Rental rental = rentalRepo.findById(id).orElse(null);
-        if (rental == null) return Map.of("error", "RENTAL_NOT_FOUND");
-
-        if (!"ONGOING".equals(rental.getStatus()) && !"CHECKED_IN".equals(rental.getStatus())) {
-            return Map.of("error", "INVALID_STATUS");
-        }
-
-        rental.setEndTime(System.currentTimeMillis());
-        rental.setStatus("WAITING_STAFF_CONFIRM");
-
-        long diffMin = (rental.getEndTime() - rental.getStartTime()) / (1000 * 60);
-        if (diffMin <= 0) diffMin = 1;
-
-        Vehicle v = vehicleRepo.findById(rental.getVehicleId()).orElse(null);
-        double price = (v != null ? v.getPrice() : 1000);
-
-        rental.setTotalPrice(diffMin * price);
-
-        rentalRepo.save(rental);
-
-        return Map.of("message", "REQUEST_RETURN_SUBMITTED");
+    @GetMapping("/history")
+    public List<RentalRecord> history() {
+        String username = getCurrentUsername();
+        return rentalRepo.findByUsername(username);
     }
-
-    // ========================================
-    // UPLOAD CONTRACT
-    // ========================================
-    @PostMapping("/{id}/upload-contract")
-    public Object uploadContract(
-            @PathVariable String id,
-            @RequestParam("file") MultipartFile file
-    ) throws Exception {
-
-        Rental rental = rentalRepo.findById(id).orElse(null);
-        if (rental == null) return Map.of("error", "RENTAL_NOT_FOUND");
-
-        rental.setContractData(new org.bson.types.Binary(
-                org.bson.BsonBinarySubType.BINARY,
-                file.getBytes()
-        ));
-
-        rentalRepo.save(rental);
-
-        return Map.of("message", "CONTRACT_UPLOADED");
-    }
-
-    // ========================================
-    // GET RENTAL
-    // ========================================
-    @GetMapping("/{id}")
-    public Rental getRentalById(@PathVariable String id) {
-        return rentalRepo.findById(id).orElse(null);
-    }
-
 }

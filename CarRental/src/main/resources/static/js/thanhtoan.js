@@ -14,8 +14,10 @@ if (!rentalId) {
 
 
 // ================================
-// LOAD THÔNG TIN CHUYẾN THUÊ
+// LOAD THÔNG TIN
 // ================================
+let totalAmount = 0;
+
 async function loadRentalInfo() {
     try {
         const res = await fetch(`/api/rentals/${rentalId}`);
@@ -31,11 +33,6 @@ async function loadRentalInfo() {
 
         const stationRes = await fetch(`/api/stations/admin/${rental.stationId}`);
         const station = await stationRes.json();
-
-
-        // ================================
-        // HIỂN THỊ LÊN GIAO DIỆN
-        // ================================
         document.querySelector(".summary-value.rental-code").innerText = rental.id;
         document.querySelector(".summary-value.vehicle-type").innerText =
             `${vehicle.type} (${vehicle.plate})`;
@@ -49,7 +46,7 @@ async function loadRentalInfo() {
         const end = rental.endTime ? new Date(rental.endTime) : new Date();
 
         const diffMs = end - start;
-        const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24)); // thuê theo ngày
+        const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
         document.querySelector(".summary-value.time-range").innerText =
             `${start.toLocaleDateString()} - ${end.toLocaleDateString()} (${days} ngày)`;
@@ -58,9 +55,8 @@ async function loadRentalInfo() {
         // ================================
         // TÍNH TIỀN
         // ================================
-        const dailyPrice = vehicle.price; // giá / ngày
+        const dailyPrice = vehicle.price;
         const basePrice = days * dailyPrice;
-
         const damageFee = rental.damageFee ?? 0;
 
         document.querySelector(".detail-value.basic-fee").innerText =
@@ -69,10 +65,10 @@ async function loadRentalInfo() {
         document.querySelector(".detail-value.damage-fee").innerText =
             damageFee.toLocaleString("vi-VN") + " VNĐ";
 
-        const total = basePrice + damageFee;
+        totalAmount = basePrice + damageFee;
 
         document.querySelector(".detail-value.total-fee").innerText =
-            total.toLocaleString("vi-VN") + " VNĐ";
+            totalAmount.toLocaleString("vi-VN") + " VNĐ";
 
     } catch (err) {
         console.error("Lỗi loadRentalInfo:", err);
@@ -80,39 +76,55 @@ async function loadRentalInfo() {
 }
 
 
+async function createPayOSPayment() {
+    try {
+        const payload = {
+            orderCode: Number(Date.now().toString().slice(-8)), // 8 số cuối timestamp
+            amount: totalAmount,
+            description: `Thanh toán thuê xe mã ${rentalId}`,
+            returnUrl: `http://localhost:8080/thanhtoan/success?rentalId=${rentalId}`,
+            cancelUrl: `http://localhost:8080/thanhtoan/cancel?rentalId=${rentalId}`
+        };
 
-// ================================
-// XÁC NHẬN THANH TOÁN
-// ================================
-async function confirmPayment() {
-    alert("Thanh toán thành công!");
-    window.location.href = "/lichsuthue";
+        const res = await fetch("/api/payment/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!data || !data.checkoutUrl) {
+            alert("Không tạo được link thanh toán!");
+            return;
+        }
+        window.location.href = data.checkoutUrl;
+
+    } catch (err) {
+        console.error("PAYOS ERROR:", err);
+        alert("Có lỗi khi tạo thanh toán!");
+    }
 }
 
+async function confirmPayment() {
+    if (!totalAmount || totalAmount <= 0) {
+        alert("Không thể thanh toán số tiền bằng 0!");
+        return;
+    }
+    await createPayOSPayment();
+}
 
-
-// ================================
-// HỦY BỎ
-// ================================
 function cancelPayment() {
     window.location.href = "/datxe";
 }
 
-
-
-// ================================
-// GÁN SỰ KIỆN
-// ================================
 document.addEventListener("DOMContentLoaded", () => {
-
     convertHTMLPlaceholders();
     loadRentalInfo();
 
     document.querySelector(".btn-confirm-payment").onclick = confirmPayment;
     document.querySelector(".btn-cancel-payment").onclick = cancelPayment;
 });
-
-
 
 function convertHTMLPlaceholders() {
     document.querySelector(".summary-item:nth-child(1) .summary-value").classList.add("rental-code");

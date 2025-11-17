@@ -1,8 +1,8 @@
 package CarRental.example.controller;
 
-import CarRental.example.document.Rental;
+import CarRental.example.document.RentalRecord;
 import CarRental.example.document.Vehicle;
-import CarRental.example.repository.RentalRepository;
+import CarRental.example.repository.RentalRecordRepository;
 import CarRental.example.repository.VehicleRepository;
 
 import org.springframework.web.bind.annotation.*;
@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/staff/return")
 public class StaffReturnController {
 
-    private final RentalRepository rentalRepo;
+    private final RentalRecordRepository rentalRepo;
     private final VehicleRepository vehicleRepo;
 
-    public StaffReturnController(RentalRepository rentalRepo, VehicleRepository vehicleRepo) {
+    public StaffReturnController(RentalRecordRepository rentalRepo, VehicleRepository vehicleRepo) {
         this.rentalRepo = rentalRepo;
         this.vehicleRepo = vehicleRepo;
     }
@@ -24,15 +24,11 @@ public class StaffReturnController {
             @PathVariable String id,
             @RequestParam(defaultValue = "0") double damageFee
     ) {
-        Rental rental = rentalRepo.findById(id).orElse(null);
+        RentalRecord rental = rentalRepo.findById(id).orElse(null);
         if (rental == null) return "RENTAL_NOT_FOUND";
 
-        if (!"WAITING_STAFF_CONFIRM".equals(rental.getStatus())) {
-            return "INVALID_STATUS";
-        }
-
         rental.setDamageFee(damageFee);
-        rental.setTotalPrice(rental.getTotalPrice() + damageFee);
+        rental.setTotal(rental.getTotal() + damageFee);
         rental.setStatus("COMPLETED");
 
         Vehicle vehicle = vehicleRepo.findById(rental.getVehicleId()).orElse(null);
