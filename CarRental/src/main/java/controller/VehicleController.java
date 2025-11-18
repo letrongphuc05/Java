@@ -1,59 +1,35 @@
 package CarRental.example.controller;
 
+import CarRental.example.document.RentalRecord;
 import CarRental.example.document.Vehicle;
-import CarRental.example.document.Station;
+import CarRental.example.repository.RentalRecordRepository;
 import CarRental.example.repository.VehicleRepository;
-import CarRental.example.repository.StationRepository;
+import CarRental.example.service.VehicleService;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/vehicles")
-@CrossOrigin(origins = "*")
 public class VehicleController {
 
     @Autowired
     private VehicleRepository repo;
 
     @Autowired
-    private StationRepository stationRepository;
+    private RentalRecordRepository rentalRepo;
 
-    // Endpoint cho trang đặt xe - trả về List<Vehicle>
+    @Autowired
+    private VehicleService vehicleService;
     @GetMapping("/station/{stationId}")
     public List<Vehicle> getByStation(@PathVariable("stationId") String stationId) {
+        releaseExpiredHolds(stationId);
         return repo.findByStationIdAndBookingStatusNot(stationId, "RENTED");
     }
-
-    // Endpoint cho staff page - trả về { stationName, vehicles }
-    @GetMapping("/station/{stationId}/staff-station")
-    public ResponseEntity<?> getByStationWithInfo(@PathVariable("stationId") String stationId) {
-        try {
-            // Lấy danh sách xe tại trạm
-            List<Vehicle> vehicles = repo.findByStationIdAndBookingStatusNot(stationId, "RENTED");
-
-            // Lấy thông tin trạm
-            Station station = stationRepository.findById(stationId).orElse(null);
-            String stationName = (station != null) ? station.getName() : "Unknown Station";
-
-            // Tạo response object theo format frontend mong đợi
-            Map<String, Object> response = new HashMap<>();
-            response.put("stationName", stationName);
-            response.put("vehicles", vehicles);
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Lỗi: " + e.getMessage()));
-        }
-    }
-
-    // ... existing code...
     @GetMapping("/admin/all")
     public List<Vehicle> getAllVehicles() {
         return repo.findAll();
@@ -84,5 +60,21 @@ public class VehicleController {
     public String deleteVehicle(@PathVariable("id") String id) {
         repo.deleteById(id);
         return "Delete vehicle " + id + " success";
+    }
+
+    private void releaseExpiredHolds(String stationId) {
+        List<RentalRecord> expired = rentalRepo.findByStatusAndHoldExpiresAtBefore(
+                "PENDING_PAYMENT", LocalDateTime.now()
+        );
+
+        for (RentalRecord record : expired) {
+            if (stationId != null && !stationId.equals(record.getStationId())) continue;
+
+            record.setStatus("CANCELLED");
+            record.setPaymentStatus("EXPIRED");
+            record.setHoldExpiresAt(null);
+            rentalRepo.save(record);
+            vehicleService.releaseHold(record.getVehicleId(), record.getId());
+        }
     }
 }

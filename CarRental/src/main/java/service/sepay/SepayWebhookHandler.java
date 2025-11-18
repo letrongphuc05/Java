@@ -1,43 +1,65 @@
 package CarRental.example.service.sepay;
 
+import CarRental.example.document.RentalRecord;
 import CarRental.example.repository.RentalRecordRepository;
 import CarRental.example.service.VehicleService;
-import CarRental.example.document.RentalRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class SepayWebhookHandler {
 
     private final RentalRecordRepository rentalRepo;
     private final VehicleService vehicleService;
 
-    private static final String ACCOUNT_NUMBER = "0915907623";
-
     public ResponseEntity<String> processWebhook(SepayWebhookData data) {
 
         log.info("Webhook SePay nhận được: {}", data);
 
-        if (data.getAccount_number() == null || !data.getAccount_number().equals(ACCOUNT_NUMBER)) {
-            log.warn("Webhook bỏ qua vì sai tài khoản nhận tiền: {}", data.getAccount_number());
-            return ResponseEntity.ok("IGNORED_WRONG_ACCOUNT");
+        String raw = data.getDescription();
+        if (raw == null || raw.isBlank()) raw = data.getContent();
+
+        if (raw == null || raw.isBlank()) {
+            log.warn("Webhook rỗng cả description lẫn content");
+            return ResponseEntity.ok("NO_DESCRIPTION");
         }
 
-        if (data.getDescription() == null || !data.getDescription().startsWith("CARRENTAL_")) {
-            log.warn("Webhook bỏ qua vì description không hợp lệ: {}", data.getDescription());
-            return ResponseEntity.ok("IGNORED_NOT_RENTAL");
+        String lower = raw.toLowerCase();
+        String rentalId = null;
+
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("rental(\\d+)")
+                .matcher(lower);
+
+        if (matcher.find()) {
+            rentalId = matcher.group(0);
+            log.info("===> rentalId lấy theo regex rentalXX: {}", rentalId);
         }
 
-        String rentalId = data.getDescription().replace("CARRENTAL_", "").trim();
-        log.info("===> Đơn thuê cần xử lý: {}", rentalId);
+        if ((rentalId == null || rentalId.isEmpty()) && lower.contains("carrental_")) {
+            String digits = lower.substring(lower.indexOf("carrental_") + "carrental_".length())
+                    .replaceAll("[^0-9]", "")
+                    .trim();
+            if (!digits.isEmpty()) {
+                rentalId = "rental" + digits;
+            }
+            log.info("===> rentalId từ CARRENTAL_XX: {}", rentalId);
+        }
+
+        if (rentalId == null || rentalId.isEmpty()) {
+            log.warn("Không tìm thấy rentalId trong nội dung: {}", raw);
+            return ResponseEntity.ok("NO_RENTAL_ID");
+        }
+
+        log.info("===> rentalId chuẩn: {}", rentalId);
 
         RentalRecord record = rentalRepo.findById(rentalId).orElse(null);
         if (record == null) {
-            log.warn("Không tìm thấy RentalRecord với id: {}", rentalId);
+            log.warn("Không tìm thấy đơn với id: {}", rentalId);
             return ResponseEntity.ok("RENTAL_NOT_FOUND");
         }
 
@@ -55,10 +77,10 @@ public class SepayWebhookHandler {
         try {
             vehicleService.markRented(record.getVehicleId(), rentalId);
         } catch (Exception e) {
-            log.error("Lỗi khi cập nhật trạng thái xe: {}", e.getMessage());
+            log.error("Lỗi cập nhật xe: {}", e.getMessage());
         }
 
-        log.info("Đơn {} đã được cập nhật là PAID từ webhook!", rentalId);
+        log.info("Đơn {} đã được cập nhật PAID!", rentalId);
         return ResponseEntity.ok("OK");
     }
 }
