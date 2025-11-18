@@ -41,45 +41,86 @@ document.addEventListener("DOMContentLoaded", function() {
             // --- KẾT THÚC GIẢ LẬP ---
 
             // --- GỌI API LẤY DANH SÁCH XE TẠI TRẠM HIỆN TẠI ---
-            // Lấy stationId từ nhân viên hiện tại (từ session/token hoặc API riêng)
+            // Lấy stationId từ nhân viên hiện tại
+            console.log("Bước 1: Lấy thông tin trạm hiện tại...");
             const stationResponse = await fetch('/api/staff/current-station');
+            console.log("Response station status:", stationResponse.status);
+            
             if (!stationResponse.ok) {
-                throw new Error('Không thể lấy thông tin trạm hiện tại');
+                const errorData = await stationResponse.text();
+                throw new Error(`Không thể lấy thông tin trạm (${stationResponse.status}): ${errorData}`);
             }
+            
             const stationData = await stationResponse.json();
-            const stationId = stationData.id; // Giả định API trả về { id, name, ... }
+            console.log("Dữ liệu trạm:", stationData);
+            const stationId = stationData.id;
+            
+            if (!stationId) {
+                throw new Error('Không tìm thấy station ID');
+            }
 
             // Lấy danh sách xe thuộc trạm này từ Vehicle Database
-            const vehicleResponse = await fetch(`/api/vehicles/station/${stationId}`);
+            console.log("Bước 2: Lấy danh sách xe từ trạm:", stationId);
+            const vehicleResponse = await fetch(`/api/vehicles/station/${stationId}/staff-station`);
+            console.log("Response vehicles status:", vehicleResponse.status);
+            
             if (!vehicleResponse.ok) {
-                throw new Error('Không thể lấy danh sách xe từ cơ sở dữ liệu');
+                const errorData = await vehicleResponse.text();
+                throw new Error(`Không thể lấy danh sách xe (${vehicleResponse.status}): ${errorData}`);
             }
+            
             const data = await vehicleResponse.json();
-            // API mong đợi trả về: { stationName: "...", vehicles: [...] }
+            console.log("Dữ liệu vehicles:", data);
+            
+            if (!data.vehicles || !Array.isArray(data.vehicles)) {
+                throw new Error('Format dữ liệu không đúng: vehicles phải là array');
+            }
 
             vehicleGrid.innerHTML = '';
+            
+            // Helper function để format model
+            const formatModel = (vehicle) => {
+                return vehicle.model || `${vehicle.brand || ''} ${vehicle.type || ''}`.trim() || 'Unknown';
+            };
+            
+            // Helper function để format trạng thái
+            const formatStatus = (bookingStatus) => {
+                const statusMap = {
+                    'AVAILABLE': 'Sẵn sàng',
+                    'PENDING_PAYMENT': 'Chờ thanh toán',
+                    'RENTED': 'Đang thuê',
+                    'MAINTENANCE': 'Bảo trì',
+                    'CHARGING': 'Đang sạc'
+                };
+                return statusMap[bookingStatus] || bookingStatus;
+            };
+            
             data.vehicles.forEach(vehicle => {
                 const card = document.createElement('div');
                 card.className = 'vehicle-card';
                 const batteryClass = vehicle.battery < 40 ? 'low' : '';
                 let statusBadgeClass = 'badge-green'; // AVAILABLE
-                if (vehicle.status === 'RENTED') statusBadgeClass = 'badge-orange';
-                else if (vehicle.status === 'MAINTENANCE') statusBadgeClass = 'badge-red';
-                else if (vehicle.status === 'CHARGING') statusBadgeClass = 'badge-blue';
+                if (vehicle.bookingStatus === 'RENTED') statusBadgeClass = 'badge-orange';
+                else if (vehicle.bookingStatus === 'MAINTENANCE') statusBadgeClass = 'badge-red';
+                else if (vehicle.bookingStatus === 'CHARGING') statusBadgeClass = 'badge-blue';
+                else if (vehicle.bookingStatus === 'PENDING_PAYMENT') statusBadgeClass = 'badge-yellow';
+
+                const modelName = formatModel(vehicle);
+                const statusText = formatStatus(vehicle.bookingStatus);
 
                 card.innerHTML = `
                     <div class="card-header">
-                        <div class="plate">${vehicle.plate}</div>
-                        <div class="model">${vehicle.model}</div>
+                        <div class="plate">${vehicle.plate || 'N/A'}</div>
+                        <div class="model">${modelName}</div>
                     </div>
                     <div class="card-body">
                         <div class="info-group">
                             <label>Mức pin</label>
-                            <div class="value battery-value ${batteryClass}">${vehicle.battery}%</div>
+                            <div class="value battery-value ${batteryClass}">${vehicle.battery || 0}%</div>
                         </div>
                         <div class="info-group">
                             <label>Trạng thái</label>
-                            <span class="status-badge ${statusBadgeClass}">${vehicle.statusText}</span>
+                            <span class="status-badge ${statusBadgeClass}">${statusText}</span>
                         </div>
                     </div>
                     <div class="card-footer">
@@ -89,6 +130,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 `;
                 vehicleGrid.appendChild(card);
             });
+            
+            console.log(`Đã tải ${data.vehicles.length} xe thành công`);
 
         } catch (error)
         {

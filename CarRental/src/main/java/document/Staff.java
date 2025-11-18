@@ -3,7 +3,7 @@ package CarRental.example.document;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "staff")
-public class Staff extends User {
+public class Staff extends CarRental.example.document.User {
 
     private String stationId;
 

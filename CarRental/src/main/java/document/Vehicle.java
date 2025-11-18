@@ -34,6 +34,7 @@ public class Vehicle {
     public String getBrand() { return brand; }
     public void setBrand(String brand) { this.brand = brand; }
 
+
     public int getBattery() { return battery; }
     public void setBattery(int battery) { this.battery = battery; }
 
