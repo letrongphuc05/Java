@@ -32,18 +32,31 @@ async function loadRentalInfo() {
     try {
         const res = await fetch(`/api/rental/${rentalId}`);
         if (!res.ok) {
-            console.error("Lỗi khi gọi API rental");
-            alert("Không tải được thông tin thanh toán, vui lòng thử lại.");
+            const msg = await res.text();
+            console.error("Lỗi khi gọi API rental", msg);
+            if (res.status === 410) {
+                alert(msg || "Đơn đặt đã hết hạn, vui lòng đặt lại.");
+                window.location.href = "/datxe";
+                return;
+            }
+            alert(msg || "Không tải được thông tin thanh toán, vui lòng thử lại.");
             return;
         }
 
         rentalData = await res.json();
 
-        const vehicleRes = await fetch(`/api/vehicles/${rentalData.vehicleId}`);
-        vehicleData = vehicleRes.ok ? await vehicleRes.json() : null;
+        vehicleData = rentalData.vehicle || null;
+        stationData = rentalData.station || null;
 
-        const stationRes = await fetch(`/api/stations/${rentalData.stationId}`);
-        stationData = stationRes.ok ? await stationRes.json() : null;
+        if (!vehicleData) {
+            const vehicleRes = await fetch(`/api/vehicles/${rentalData.vehicleId}`);
+            vehicleData = vehicleRes.ok ? await vehicleRes.json() : null;
+        }
+
+        if (!stationData) {
+            const stationRes = await fetch(`/api/stations/${rentalData.stationId}`);
+            stationData = stationRes.ok ? await stationRes.json() : null;
+        }
 
         document.querySelector(".username-label").innerText = rentalData.username || "";
 
@@ -66,7 +79,7 @@ async function loadRentalInfo() {
         document.querySelector(".summary-value.distance").innerText =
             rentalData.distanceKm ? `${Number(rentalData.distanceKm).toFixed(1)} km` : "-";
 
-        const unitPrice = vehicleData?.price || (rentalData.total && rentalData.rentalDays ? rentalData.total / rentalData.rentalDays : 0);
+        const unitPrice = vehicleData?.price || rentalData.vehiclePrice || (rentalData.total && rentalData.rentalDays ? rentalData.total / rentalData.rentalDays : 0);
         const basePrice = unitPrice * rentalDays;
         totalAmount = rentalData.total && rentalData.total > 0 ? rentalData.total : basePrice + (rentalData.damageFee ?? 0);
 
@@ -85,29 +98,37 @@ async function loadRentalInfo() {
     }
 }
 
-async function refreshUploadStatus() {
+function applyUploadState(data) {
+    const statusText = document.getElementById("upload-status-text");
+    const btnId = document.getElementById("btn-upload-id");
+    const btnLicense = document.getElementById("btn-upload-license");
+    if (!statusText || !btnId || !btnLicense || !data) return;
+
+    if (data.licenseUploaded && data.idCardUploaded) {
+        statusText.innerText = "Đã tải đủ CCCD & GPLX";
+        statusText.style.color = "#2e7d32";
+        btnId.style.display = "none";
+        btnLicense.style.display = "none";
+    } else {
+        const missing = [!data.idCardUploaded ? "CCCD" : null, !data.licenseUploaded ? "GPLX" : null]
+            .filter(Boolean)
+            .join(", ");
+        statusText.innerText = missing ? `Thiếu: ${missing}` : "Thiếu giấy tờ";
+        statusText.style.color = "#c0392b";
+        btnId.style.display = data.idCardUploaded ? "none" : "inline-flex";
+        btnLicense.style.display = data.licenseUploaded ? "none" : "inline-flex";
+    }
+}
+
+async function refreshUploadStatus(prefetched) {
     try {
-        const res = await fetch("/api/renter/verification-status");
-        if (!res.ok) return;
-        const data = await res.json();
-        const statusText = document.getElementById("upload-status-text");
-        const btnId = document.getElementById("btn-upload-id");
-        const btnLicense = document.getElementById("btn-upload-license");
-        if (!statusText) return;
-        if (data.licenseUploaded && data.idCardUploaded) {
-            statusText.innerText = "Đã tải đủ CCCD & GPLX";
-            statusText.style.color = "#2e7d32";
-            btnId.style.display = "none";
-            btnLicense.style.display = "none";
-        } else {
-            const missing = [!data.idCardUploaded ? "CCCD" : null, !data.licenseUploaded ? "GPLX" : null]
-                .filter(Boolean)
-                .join(", ");
-            statusText.innerText = missing ? `Thiếu: ${missing}` : "Thiếu giấy tờ";
-            statusText.style.color = "#c0392b";
-            btnId.style.display = data.idCardUploaded ? "none" : "inline-flex";
-            btnLicense.style.display = data.licenseUploaded ? "none" : "inline-flex";
+        let data = prefetched;
+        if (!data) {
+            const res = await fetch("/api/renter/verification-status");
+            if (!res.ok) return;
+            data = await res.json();
         }
+        applyUploadState(data);
     } catch (e) {
         console.error(e);
     }
@@ -122,10 +143,12 @@ function createUploader(type) {
         form.append("file", input.files[0]);
         const res = await fetch(`/api/renter/upload-${type}`, { method: "POST", body: form });
         if (res.ok) {
+            const state = await res.json().catch(() => null);
             alert("Tải lên thành công");
-            refreshUploadStatus();
+            refreshUploadStatus(state);
         } else {
-            alert("Tải lên thất bại");
+            const msg = await res.text();
+            alert(msg || "Tải lên thất bại");
         }
     };
     input.click();
@@ -157,6 +180,11 @@ async function confirmPayment() {
 
     if (!res.ok) {
         const message = await res.text();
+        if (res.status === 410) {
+            alert(message || "Đơn đặt đã hết hạn, vui lòng đặt lại.");
+            window.location.href = "/datxe";
+            return;
+        }
         alert(message || "Thanh toán thất bại");
         return;
     }
@@ -166,14 +194,16 @@ async function confirmPayment() {
     const latestTotal = data.total || totalAmount;
     document.querySelector(".detail-value.total-fee").innerText = latestTotal.toLocaleString("vi-VN") + " VNĐ";
     if (method === "bank_transfer") {
-        window.location.href = `/payos-qr?rentalId=${encodeURIComponent(rentalId)}`;
+        window.location.href = `/sepay-qr?rentalId=${encodeURIComponent(rentalId)}`;
     } else {
         alert("Đã lưu phương thức thanh toán. Vui lòng tới trạm để hoàn tất thanh toán tiền mặt!");
     }
 }
 
 function cancelPayment() {
-    window.location.href = "/datxe";
+    fetch(`/api/rental/${rentalId}/cancel`, { method: "POST" }).finally(() => {
+        window.location.href = "/datxe";
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -184,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Thanh toán chuyển khoản thành công!");
     }
     if (params.get("cancel")) {
-        alert("Bạn đã hủy thanh toán PayOS.");
+        alert("Bạn đã hủy thanh toán SePay.");
     }
 
     document.querySelector(".btn-confirm-payment").onclick = confirmPayment;

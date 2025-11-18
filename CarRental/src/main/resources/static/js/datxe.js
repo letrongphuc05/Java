@@ -8,8 +8,10 @@ function getStationId() {
 
 let selectedStation = getStationId();
 let selectedVehicle = null;
+let selectedVehicleData = null;
 let stationCache = [];
 let userCoordinates = null;
+let documentInfo = null;
 
 function initDates() {
     const today = new Date().toISOString().split("T")[0];
@@ -28,6 +30,39 @@ function requestUserLocation() {
         };
         updateDistanceDisplay();
     });
+}
+
+function getRentalDays() {
+    const startInput = document.getElementById("start-date");
+    const endInput = document.getElementById("end-date");
+    if (!startInput || !endInput) return 1;
+    const start = new Date(startInput.value);
+    const end = new Date(endInput.value);
+    const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff + 1 : 1;
+}
+
+function renderSelectionDetails() {
+    const nameEl = document.getElementById("sel-name");
+    const priceEl = document.getElementById("sel-price");
+    const statusEl = document.getElementById("sel-status");
+    if (!nameEl || !priceEl || !statusEl) return;
+
+    if (!selectedVehicleData) {
+        nameEl.innerText = "Chưa chọn";
+        priceEl.innerText = "-";
+        statusEl.innerText = "-";
+        statusEl.className = "status-badge";
+        return;
+    }
+
+    nameEl.innerText = `${selectedVehicleData.brand ?? selectedVehicleData.type} (${selectedVehicleData.plate})`;
+    const days = getRentalDays();
+    const price = (selectedVehicleData.price ?? 0) * days;
+    priceEl.innerText = `${(selectedVehicleData.price ?? 0).toLocaleString('vi-VN')} đ/ngày • ${price.toLocaleString('vi-VN')} đ/${days} ngày`;
+    const bookingStatus = selectedVehicleData.bookingStatus || "AVAILABLE";
+    statusEl.innerText = bookingStatus === "PENDING_PAYMENT" ? "Đang chờ thanh toán" : "Sẵn sàng";
+    statusEl.className = "status-badge " + (bookingStatus === "PENDING_PAYMENT" ? "pending" : "available");
 }
 
 function calculateDistanceKm(lat1, lon1, lat2, lon2) {
@@ -71,6 +106,70 @@ async function checkLogin() {
     }
 }
 
+function applyDocumentStatus(data) {
+    const card = document.getElementById("document-upload-card");
+    const statusEl = document.getElementById("document-status");
+    const btnId = document.getElementById("btn-upload-idcard");
+    const btnLicense = document.getElementById("btn-upload-license");
+    if (!card || !statusEl || !btnId || !btnLicense) return;
+
+    const licenseUploaded = !!data?.licenseUploaded;
+    const idCardUploaded = !!data?.idCardUploaded;
+
+    if (licenseUploaded && idCardUploaded) {
+        card.style.display = "none";
+        return;
+    }
+
+    card.style.display = "block";
+    const missing = [];
+    if (!idCardUploaded) missing.push("CCCD");
+    if (!licenseUploaded) missing.push("GPLX");
+
+    statusEl.innerText = missing.length ? `Vui lòng tải: ${missing.join(", ")}` : "Chưa có thông tin giấy tờ.";
+    statusEl.style.color = "#c0392b";
+    btnId.style.display = idCardUploaded ? "none" : "inline-flex";
+    btnLicense.style.display = licenseUploaded ? "none" : "inline-flex";
+}
+
+async function loadDocumentStatus() {
+    try {
+        const res = await fetch("/api/renter/verification-status");
+        if (!res.ok) {
+            applyDocumentStatus({});
+            return;
+        }
+        const data = await res.json();
+        documentInfo = data;
+        applyDocumentStatus(data);
+    } catch (e) {
+        console.error("Lỗi kiểm tra giấy tờ:", e);
+        applyDocumentStatus({});
+    }
+}
+
+function triggerDocumentUpload(type) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async () => {
+        if (!input.files.length) return;
+        const form = new FormData();
+        form.append("file", input.files[0]);
+        const res = await fetch(`/api/renter/upload-${type}`, { method: "POST", body: form });
+        if (res.ok) {
+            const data = await res.json().catch(() => null);
+            alert("Tải lên thành công");
+            documentInfo = data || documentInfo;
+            applyDocumentStatus(documentInfo || {});
+        } else {
+            const msg = await res.text();
+            alert(msg || "Tải lên thất bại");
+        }
+    };
+    input.click();
+}
+
 // ===============================
 // LOAD DANH SÁCH TRẠM
 // ===============================
@@ -97,6 +196,7 @@ async function loadStations() {
             div.onclick = () => {
                 selectedStation = st.id;
                 selectedVehicle = null;
+                selectedVehicleData = null;
 
                 document.getElementById("selected-station").innerText = `${st.name} - ${st.address ?? ""}`;
 
@@ -107,6 +207,7 @@ async function loadStations() {
 
                 loadVehicles();
                 updateDistanceDisplay();
+                renderSelectionDetails();
             };
 
             container.appendChild(div);
@@ -166,8 +267,14 @@ async function loadVehicles() {
         }
 
         vehicles.forEach(v => {
+            const bookingStatus = v.bookingStatus || "AVAILABLE";
+            if (bookingStatus === "RENTED") return; // ẩn xe đã thuê
+
             const div = document.createElement("div");
             div.classList.add("vehicle-card");
+
+            const priceValue = v.price ?? 0;
+            const isPending = bookingStatus === "PENDING_PAYMENT" && v.pendingRentalId;
 
             div.innerHTML = `
                 <div class="vehicle-icon"><i class="fas fa-car"></i></div>
@@ -175,18 +282,26 @@ async function loadVehicles() {
                     <h3>${v.brand ? v.brand : ""} ${v.type} (${v.plate})</h3>
                     <p>Biển số: <b>${v.plate}</b></p>
                     <p>Pin: ${v.battery}%</p>
-                    <p class="price-text">${v.price.toLocaleString('vi-VN')}đ / ngày</p>
+                    <p class="price-text">${priceValue.toLocaleString('vi-VN')}đ / ngày</p>
+                    <p class="status-text ${isPending ? 'pending' : 'available'}">${isPending ? 'Đang chờ thanh toán' : 'Sẵn sàng'}</p>
                 </div>
             `;
 
-            div.onclick = () => {
-                selectedVehicle = v.id;
+            if (isPending) {
+                div.classList.add("vehicle-pending");
+                div.onclick = () => alert("Xe đang chờ thanh toán. Vui lòng chọn xe khác!");
+            } else {
+                div.onclick = () => {
+                    selectedVehicle = v.id;
+                    selectedVehicleData = v;
 
-                document.querySelectorAll(".vehicle-card")
-                    .forEach(el => el.classList.remove("selected"));
+                    document.querySelectorAll(".vehicle-card")
+                        .forEach(el => el.classList.remove("selected"));
 
-                div.classList.add("selected");
-            };
+                    div.classList.add("selected");
+                    renderSelectionDetails();
+                };
+            }
 
             list.appendChild(div);
         });
@@ -262,6 +377,10 @@ async function bookNow() {
 }
 
 document.getElementById("btn-book").onclick = bookNow;
+const btnIdCard = document.getElementById("btn-upload-idcard");
+const btnLicense = document.getElementById("btn-upload-license");
+if (btnIdCard) btnIdCard.onclick = () => triggerDocumentUpload("idcard");
+if (btnLicense) btnLicense.onclick = () => triggerDocumentUpload("license");
 
 // ===============================
 // KHỞI CHẠY
@@ -269,3 +388,10 @@ document.getElementById("btn-book").onclick = bookNow;
 initDates();
 requestUserLocation();
 loadStations();
+renderSelectionDetails();
+loadDocumentStatus();
+
+const startInput = document.getElementById("start-date");
+const endInput = document.getElementById("end-date");
+if (startInput) startInput.addEventListener("change", renderSelectionDetails);
+if (endInput) endInput.addEventListener("change", renderSelectionDetails);

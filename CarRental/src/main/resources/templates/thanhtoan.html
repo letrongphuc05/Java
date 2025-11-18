@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,9 +27,7 @@
             </div>
             <div class="auth-buttons">
                 <div class="user-info">
-                    <span class="welcome-text">
-                        Xin chào, <b sec:authentication="name"></b>
-                    </span>
+                    <span class="welcome-text">Xin chào, <b class="username-label">---</b></span>
                 </div>
             </div>
         </div>

@@ -67,6 +67,24 @@
             <div id="vehicle-list" class="vehicle-grid"></div>
         </div>
 
+        <div class="card selection-summary">
+            <h2>Xe đã chọn</h2>
+            <div class="selection-row">
+                <div>
+                    <p class="label">Tên xe</p>
+                    <p id="sel-name" class="value">Chưa chọn</p>
+                </div>
+                <div>
+                    <p class="label">Giá thuê</p>
+                    <p id="sel-price" class="value">-</p>
+                </div>
+                <div>
+                    <p class="label">Trạng thái</p>
+                    <span id="sel-status" class="status-badge">-</span>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <h2>Thời gian & khoảng cách</h2>
             <div class="rental-options">
@@ -82,6 +100,15 @@
                     <label>Quãng đường tới trạm</label>
                     <div id="distance-display">Chưa xác định</div>
                 </div>
+            </div>
+        </div>
+
+        <div class="card" id="document-upload-card">
+            <h2>Giấy tờ thuê xe</h2>
+            <p id="document-status" class="doc-status">Đang kiểm tra trạng thái giấy tờ...</p>
+            <div class="doc-actions">
+                <button type="button" class="btn-upload-doc" id="btn-upload-idcard">Tải CCCD/CMND</button>
+                <button type="button" class="btn-upload-doc" id="btn-upload-license">Tải GPLX</button>
             </div>
         </div>
 
