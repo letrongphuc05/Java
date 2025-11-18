@@ -1,10 +1,14 @@
 package CarRental.example.controller;
 
-import CarRental.example.repository.RentalRecordRepository;
-import CarRental.example.repository.VehicleRepository;
 import CarRental.example.document.RentalRecord;
 import CarRental.example.document.Vehicle;
+import CarRental.example.repository.RentalRecordRepository;
+import CarRental.example.repository.VehicleRepository;
 import CarRental.example.service.VehicleService;
+import CarRental.example.service.sepay.SepayQRData;
+import CarRental.example.service.sepay.SepayService;
+import CarRental.example.service.sepay.SepayWebhookData;
+import CarRental.example.service.sepay.SepayWebhookHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,40 +17,43 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @RestController
-@RequestMapping("/payment")
+@RequestMapping({"/payment", "/api/payment"})
 public class PaymentController {
 
-    @Value("${sepay.merchantId:}")
-    private String merchantId;
-
-    @Value("${sepay.secretKey:}")
-    private String secretKey;
-
-    @Value("${sepay.endpoint:https://api.sepay.vn/payment}")
-    private String sepayEndpoint;
+    private final String accountName;
+    private final String accountNumber;
+    private final String bankName;
 
     private final RentalRecordRepository rentalRepo;
     private final VehicleRepository vehicleRepository;
     private final VehicleService vehicleService;
+    private final SepayService sepayService;
+    private final SepayWebhookHandler webhookHandler;
 
-    public PaymentController(RentalRecordRepository rentalRepo, VehicleRepository vehicleRepository, VehicleService vehicleService) {
+    public PaymentController(RentalRecordRepository rentalRepo,
+                             VehicleRepository vehicleRepository,
+                             VehicleService vehicleService,
+                             SepayService sepayService,
+                             SepayWebhookHandler webhookHandler,
+                             @Value("${sepay.account-name:}") String accountName,
+                             @Value("${sepay.account-number:}") String accountNumber,
+                             @Value("${sepay.bank-name:}") String bankName) {
         this.rentalRepo = rentalRepo;
         this.vehicleRepository = vehicleRepository;
         this.vehicleService = vehicleService;
+        this.sepayService = sepayService;
+        this.webhookHandler = webhookHandler;
+        this.accountName = accountName;
+        this.accountNumber = accountNumber;
+        this.bankName = bankName;
     }
 
-    private boolean expireIfNeeded(RentalRecord record) {
+    private boolean expireRentalIfNeeded(RentalRecord record) {
         if (record == null) return false;
 
         boolean pending = "PENDING_PAYMENT".equalsIgnoreCase(record.getStatus());
@@ -63,20 +70,24 @@ public class PaymentController {
     }
 
     @PostMapping("/create-order")
-    public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> req) {
+    public ResponseEntity<?> createOrder(@RequestBody(required = false) Map<String, Object> req,
+                                         @RequestParam(value = "rentalId", required = false) String rentalIdParam) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth != null ? auth.getName() : null;
+
         if (username == null || "anonymousUser".equalsIgnoreCase(username)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Bạn cần đăng nhập để thanh toán");
         }
-        String rentalId = (String) req.get("rentalId");
+
+        String rentalId = null;
+        if (req != null && req.get("rentalId") instanceof String) {
+            rentalId = (String) req.get("rentalId");
+        }
+        if (rentalId == null || rentalId.isEmpty()) {
+            rentalId = rentalIdParam;
+        }
         if (rentalId == null || rentalId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Thiếu mã chuyến thuê");
-        }
-
-        if (merchantId == null || secretKey == null || merchantId.isBlank() || secretKey.isBlank()) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Thiếu cấu hình SePay, vui lòng bổ sung merchantId/secretKey");
         }
 
         RentalRecord record = rentalRepo.findById(rentalId).orElse(null);
@@ -84,12 +95,12 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy chuyến thuê");
         }
 
-        if (expireIfNeeded(record)) {
+        if (expireRentalIfNeeded(record)) {
             return ResponseEntity.status(HttpStatus.GONE)
                     .body("Đơn đặt đã hết hạn thanh toán. Vui lòng đặt xe lại.");
         }
 
-        if (record.getPaymentStatus() != null && "PAID".equalsIgnoreCase(record.getPaymentStatus())) {
+        if ("PAID".equalsIgnoreCase(record.getPaymentStatus())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chuyến thuê đã thanh toán");
         }
 
@@ -106,67 +117,57 @@ public class PaymentController {
                 rentalDays = 1;
             }
         }
+
         double amount = record.getTotal() > 0 ? record.getTotal() : rentalDays * vehicle.getPrice();
         record.setTotal(amount);
         record.setPaymentMethod("bank_transfer");
         record.setPaymentStatus("PENDING");
         record.setStatus("PENDING_PAYMENT");
+        record.setHoldExpiresAt(LocalDateTime.now().plusMinutes(5));
         rentalRepo.save(record);
+        vehicleService.markPendingPayment(record.getVehicleId(), rentalId);
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        int orderCode = Math.abs(rentalId.hashCode());
         int amountInt = (int) Math.round(amount);
-        String description = "Thanh toan don " + rentalId;
-        String returnUrl = "http://localhost:8080/payment/return?rentalId=" + rentalId;
-        String cancelUrl = "http://localhost:8080/payment/cancel?rentalId=" + rentalId;
+        String description = "Thanh toan don #" + rentalId;
 
-        String signatureRaw = merchantId + "|" + orderCode + "|" + amountInt + "|" + description + "|" + returnUrl + "|" + cancelUrl;
-        String signature = signPayload(signatureRaw);
+        try {
+            SepayQRData qrData = sepayService.createQR(amountInt, description, rentalId);
 
-        StringBuilder paymentUrl = new StringBuilder(sepayEndpoint);
-        paymentUrl.append(paymentUrl.toString().contains("?") ? "&" : "?")
-                .append("merchantId=").append(urlEncode(merchantId))
-                .append("&orderCode=").append(orderCode)
-                .append("&amount=").append(amountInt)
-                .append("&description=").append(urlEncode(description))
-                .append("&returnUrl=").append(urlEncode(returnUrl))
-                .append("&cancelUrl=").append(urlEncode(cancelUrl))
-                .append("&signature=").append(urlEncode(signature));
+            payload.put("amount", amountInt);
+            payload.put("description", description);
 
-        String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=" + urlEncode(paymentUrl.toString());
+            payload.put("qrUrl", qrData.getQr_url());
+            payload.put("qrBase64", qrData.getQr());
+            payload.put("bank", Optional.ofNullable(qrData.getBank()).orElse(bankName));
+            payload.put("accountName", Optional.ofNullable(qrData.getAccount_name()).orElse(accountName));
+            payload.put("accountNumber", Optional.ofNullable(qrData.getAccount_number()).orElse(accountNumber));
+            payload.put("rentalId", rentalId);
+            payload.put("status", "OK");
 
-        payload.put("orderCode", orderCode);
-        payload.put("amount", amountInt);
-        payload.put("description", description);
-        payload.put("checkoutUrl", paymentUrl.toString());
-        payload.put("qrCodeUrl", qrCodeUrl);
-        payload.put("rentalId", rentalId);
-        payload.put("status", "OK");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ex.getMessage());
+        }
 
         return ResponseEntity.ok(payload);
     }
 
-    private String signPayload(String raw) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec keySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-            mac.init(keySpec);
-            byte[] bytes = mac.doFinal(raw.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder();
-            for (byte b : bytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            return "";
+    @GetMapping("/create-qr")
+    public ResponseEntity<?> createQr(@RequestParam int amount, @RequestParam String description, @RequestParam(required = false) String orderId) {
+        if (amount <= 0 || description.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Thiếu số tiền hoặc mô tả thanh toán");
         }
-    }
 
-    private String urlEncode(String data) {
         try {
-            return URLEncoder.encode(data, StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            return data;
+            SepayQRData qrData = sepayService.createQR(amount, description, orderId);
+            return ResponseEntity.ok(qrData);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ex.getMessage());
         }
     }
 
@@ -174,16 +175,20 @@ public class PaymentController {
     public RedirectView paymentReturn(@RequestParam("rentalId") String rentalId,
                                       @RequestParam(value = "status", required = false) String status,
                                       @RequestParam(value = "amount", required = false) String amount) {
+
         RentalRecord record = rentalRepo.findById(rentalId).orElse(null);
         if (record != null) {
-            if (expireIfNeeded(record)) {
+            if (expireRentalIfNeeded(record)) {
                 RedirectView redirectView = new RedirectView("/thanhtoan?rentalId=" + rentalId + "&cancel=1");
                 redirectView.setExposeModelAttributes(false);
                 return redirectView;
             }
+
             record.setPaymentStatus("PAID");
             if (amount != null) {
-                try { record.setTotal(Double.parseDouble(amount)); } catch (NumberFormatException ignored) {}
+                try {
+                    record.setTotal(Double.parseDouble(amount));
+                } catch (NumberFormatException ignored) {}
             }
             record.setPaidAt(LocalDateTime.now());
             record.setStatus("PAID");
@@ -191,6 +196,7 @@ public class PaymentController {
             rentalRepo.save(record);
             vehicleService.markRented(record.getVehicleId(), rentalId);
         }
+
         RedirectView redirectView = new RedirectView("/thanhtoan?rentalId=" + rentalId + "&success=1");
         redirectView.setExposeModelAttributes(false);
         return redirectView;
@@ -199,15 +205,42 @@ public class PaymentController {
     @GetMapping("/cancel")
     public RedirectView paymentCancel(@RequestParam("rentalId") String rentalId) {
         RentalRecord record = rentalRepo.findById(rentalId).orElse(null);
+
         if (record != null) {
             record.setPaymentStatus("CANCELLED");
             record.setStatus("CANCELLED");
             record.setHoldExpiresAt(null);
+
             rentalRepo.save(record);
             vehicleService.releaseHold(record.getVehicleId(), rentalId);
         }
+
         RedirectView redirectView = new RedirectView("/thanhtoan?rentalId=" + rentalId + "&cancel=1");
         redirectView.setExposeModelAttributes(false);
         return redirectView;
+    }
+
+    @PostMapping("/webhook")
+    public ResponseEntity<String> paymentWebhook(@RequestBody SepayWebhookData payload) {
+        return webhookHandler.processWebhook(payload);
+    }
+
+    @GetMapping("/check")
+    public ResponseEntity<Map<String, Object>> checkPayment(@RequestParam("rentalId") String rentalId) {
+        Map<String, Object> resp = new HashMap<>();
+
+        RentalRecord record = rentalRepo.findById(rentalId).orElse(null);
+        if (record == null) {
+            resp.put("paid", false);
+            resp.put("message", "Không tìm thấy chuyến thuê");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+        }
+
+        boolean paid = "PAID".equalsIgnoreCase(record.getPaymentStatus());
+        resp.put("paid", paid);
+        resp.put("status", record.getPaymentStatus());
+        resp.put("rentalId", rentalId);
+
+        return ResponseEntity.ok(resp);
     }
 }
