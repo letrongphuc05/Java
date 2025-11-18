@@ -6,43 +6,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     async function loadVehiclesForStation() {
         try {
-            // =================================================================
-            // BACKEND CALL: GET /api/staff/my-station/vehicles (Giả định)
-            // Mục đích: Lấy danh sách xe TẠI TRẠM HIỆN TẠI của nhân viên.
-            // API này có thể DÙNG CHUNG với giao diện Dark Mode (staff-station-vehicles.js)
-            //
-            // Backend trả về:
-            // {
-            //   "stationName": "Q.1",
-            //   "vehicles": [
-            //     { "id": "v1", "plate": "51A-123.45", "model": "VinFast VFe34", "battery": 90,
-            //       "status": "AVAILABLE", "statusText": "Sẵn sàng" },
-            //     { "id": "v2", "plate": "51C-678.90", "model": "VinFast Klara", "battery": 45,
-            //       "status": "RENTED", "statusText": "Đang thuê" },
-            //     { "id": "v3", "plate": "51D-111.22", "model": "VinFast Theon", "battery": 30,
-            //       "status": "MAINTENANCE", "statusText": "Bảo trì" }
-            //   ]
-            // }
-            // =================================================================
-
-            // --- GIẢ LẬP DỮ LIỆU ---
-            // const fakeData = {
-            //     stationName: "Q.1",
-            //     vehicles: [
-            //         { "id": "v1", "plate": "51A-123.45", "model": "VinFast VFe34", "battery": 90, "status": "AVAILABLE", "statusText": "Sẵn sàng" },
-            //         { "id": "v2", "plate": "51A-123.45", "model": "VinFast VFe34", "battery": 90, "status": "RENTED", "statusText": "Đang thuê" },
-            //         { "id": "v3", "plate": "51A-123.45", "model": "VinFast VFe34", "battery": 90, "status": "AVAILABLE", "statusText": "Sẵn sàng" },
-            //         { "id": "v4", "plate": "51A-123.45", "model": "VinFast VFe34", "battery": 90, "status": "AVAILABLE", "statusText": "Sẵn sàng" },
-            //         { "id": "v5", "plate": "51A-123.45", "model": "VinFast VFe34", "battery": 90, "status": "AVAILABLE", "statusText": "Sẵn sàng" },
-            //         { "id": "v6", "plate": "51A-123.45", "model": "VinFast VFe34", "battery": 30, "status": "MAINTENANCE", "statusText": "Bảo trì" }
-            //     ]
-            // };
-            // const data = fakeData;
-            // --- KẾT THÚC GIẢ LẬP ---
-
-            // --- GỌI API LẤY DANH SÁCH XE TẠI TRẠM HIỆN TẠI ---
-            // Lấy stationId từ nhân viên hiện tại
-            console.log("Bước 1: Lấy thông tin trạm hiện tại...");
+            console.log("Lấy thông tin trạm hiện tại...");
             const stationResponse = await fetch('/api/staff/current-station');
             console.log("Response station status:", stationResponse.status);
             
@@ -60,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
 
             // Lấy danh sách xe thuộc trạm này từ Vehicle Database
-            console.log("Bước 2: Lấy danh sách xe từ trạm:", stationId);
+            console.log("Lấy danh sách xe từ trạm:", stationId);
             const vehicleResponse = await fetch(`/api/vehicles/station/${stationId}/staff-station`);
             console.log("Response vehicles status:", vehicleResponse.status);
             
