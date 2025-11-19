@@ -2,6 +2,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const historyTableBody = document.getElementById('historyTableBody');
 
+    window.toggleProfileMenu = function(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown) dropdown.classList.toggle('show');
+    };
+
+    window.addEventListener('click', function(event) {
+        if (!event.target.closest('.admin-profile')) {
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    });
+
     loadHistory();
 
     async function loadHistory() {
@@ -18,9 +33,7 @@ document.addEventListener("DOMContentLoaded", function() {
             rentals.forEach(rental => {
                 const tr = document.createElement('tr');
 
-
                 let statusClass = 'status-inactive';
-
                 if (['PENDING', 'PENDING_PAYMENT', 'AWAITING_CASH'].includes(rental.status)) {
                     statusClass = 'status-pending';
                 } else if (['RETURNED', 'COMPLETED', 'PAID', 'IN_PROGRESS', 'CHECKED_IN', 'CONTRACT_SIGNED'].includes(rental.status)) {
@@ -31,29 +44,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 let statusText = rental.status;
                 switch (rental.status) {
-                    case 'PENDING':
-                        statusText = 'Chờ xử lý'; break;
-                    case 'PENDING_PAYMENT':
-                        statusText = 'Chờ thanh toán'; break;
-                    case 'AWAITING_CASH':
-                        statusText = 'Chờ tiền mặt'; break;
-                    case 'PAID':
-                        statusText = 'Đã thanh toán'; break;
+                    case 'PENDING': statusText = 'Chờ xử lý'; break;
+                    case 'PENDING_PAYMENT': statusText = 'Chờ thanh toán'; break;
+                    case 'AWAITING_CASH': statusText = 'Chờ tiền mặt'; break;
+                    case 'PAID': statusText = 'Đã thanh toán'; break;
                     case 'IN_PROGRESS':
-                    case 'CHECKED_IN':
-                        statusText = 'Đang thuê'; break;
-                    case 'RETURNED':
-                        statusText = 'Đã trả xe'; break;
-                    case 'COMPLETED':
-                        statusText = 'Hoàn thành'; break;
-                    case 'CANCELLED':
-                        statusText = 'Đã hủy'; break;
-                    case 'EXPIRED':
-                        statusText = 'Hết hạn'; break;
-                    case 'CONTRACT_SIGNED':
-                        statusText = 'Đã ký HĐ'; break;
-                    default:
-                        statusText = rental.status;
+                    case 'CHECKED_IN': statusText = 'Đang thuê'; break;
+                    case 'RETURNED': statusText = 'Đã trả xe'; break;
+                    case 'COMPLETED': statusText = 'Hoàn thành'; break;
+                    case 'CANCELLED': statusText = 'Đã hủy'; break;
+                    case 'EXPIRED': statusText = 'Hết hạn'; break;
+                    case 'CONTRACT_SIGNED': statusText = 'Đã ký HĐ'; break;
+                    default: statusText = rental.status;
                 }
 
                 tr.innerHTML = `

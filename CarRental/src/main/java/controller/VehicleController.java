@@ -6,6 +6,11 @@ import CarRental.example.repository.RentalRecordRepository;
 import CarRental.example.repository.VehicleRepository;
 import CarRental.example.service.VehicleService;
 
+
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,11 +30,13 @@ public class VehicleController {
 
     @Autowired
     private VehicleService vehicleService;
+
     @GetMapping("/station/{stationId}")
     public List<Vehicle> getByStation(@PathVariable("stationId") String stationId) {
         releaseExpiredHolds(stationId);
         return repo.findByStationIdAndBookingStatusNot(stationId, "RENTED");
     }
+
     @GetMapping("/admin/all")
     public List<Vehicle> getAllVehicles() {
         return repo.findAll();
@@ -66,7 +73,6 @@ public class VehicleController {
 
             Vehicle vehicle = vehicleOpt.get();
 
-            // Update battery if provided
             if (updates.containsKey("battery")) {
                 Object batteryObj = updates.get("battery");
                 if (batteryObj instanceof Number) {
@@ -74,7 +80,7 @@ public class VehicleController {
                 }
             }
 
-            // Update booking status if provided
+
             if (updates.containsKey("bookingStatus")) {
                 vehicle.setBookingStatus((String) updates.get("bookingStatus"));
             }
