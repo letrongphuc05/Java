@@ -103,6 +103,9 @@ document.addEventListener("DOMContentLoaded", function() {
             vehicleGrid.innerHTML = '<p style="color: #e74c3c;">Lỗi khi tải dữ liệu xe.</p>';
         }
     }
+    // Store current vehicle being edited
+    let currentEditingVehicle = null;
+
     vehicleGrid.addEventListener('click', (event) => {
         const target = event.target;
         if (target.tagName !== 'BUTTON' || !target.dataset.id) return;
@@ -111,22 +114,130 @@ document.addEventListener("DOMContentLoaded", function() {
         const action = target.dataset.action;
 
         if (action === 'update') {
-            // =================================================================
-            // BACKEND CALL: (Mở Modal)
-            // Mục đích: Mở 1 modal để nhân viên cập nhật pin/trạng thái.
-            // =================================================================
-            alert(`(Giả lập) Mở modal Cập nhật cho xe ID: ${vehicleId}`);
+            openUpdateModal(vehicleId);
         }
         else if (action === 'report') {
-            // =================================================================
-            // BACKEND CALL: POST /api/staff/report-issue (Giả định)
-            // Mục đích: Báo cáo sự cố cho xe.
-            // =================================================================
-            const issue = prompt(`(Giả lập) Nhập sự cố cho xe ID: ${vehicleId}`);
+            const issue = prompt(`Nhập sự cố cho xe ID: ${vehicleId}`);
             if (issue) {
-                alert(`(Giả lập) Gửi báo cáo: "${issue}"`);
+                alert(`Gửi báo cáo: "${issue}"`);
             }
         }
     });
+
+    // Function to open update modal
+    window.openUpdateModal = function(vehicleId) {
+        try {
+            // Find vehicle data from grid
+            const vehicleCard = Array.from(vehicleGrid.querySelectorAll('.vehicle-card')).find(card => {
+                return card.querySelector('button[data-id="' + vehicleId + '"]') !== null;
+            });
+
+            if (!vehicleCard) {
+                console.error('Vehicle card not found');
+                return;
+            }
+
+            // Extract data from card
+            const plateText = vehicleCard.querySelector('.plate').textContent;
+            const batteryText = vehicleCard.querySelector('.battery-value').textContent;
+            const battery = parseInt(batteryText);
+
+            // Get current booking status from badge text
+            const badgeText = vehicleCard.querySelector('.status-badge').textContent;
+            const statusMap = {
+                'Chờ thanh toán': 'PENDING_PAYMENT',
+                'Sẵn sàng': 'AVAILABLE',
+                'Chưa sẵn sàng': 'MAINTENANCE',
+                'Đang thuê': 'RENTED'
+            };
+            const currentStatus = statusMap[badgeText] || 'AVAILABLE';
+
+            // Fill modal with current data
+            document.getElementById('modalPlate').value = plateText;
+            document.getElementById('modalBattery').value = battery;
+            document.getElementById('modalBookingStatus').value = currentStatus;
+
+            // Store vehicle info for saving
+            currentEditingVehicle = {
+                id: vehicleId,
+                plate: plateText
+            };
+
+            // Show modal
+            document.getElementById('updateVehicleModal').style.display = 'block';
+        } catch (error) {
+            console.error('Error opening modal:', error);
+            alert('Lỗi khi mở modal cập nhật');
+        }
+    };
+
+    // Function to close modal
+    window.closeUpdateModal = function() {
+        document.getElementById('updateVehicleModal').style.display = 'none';
+        currentEditingVehicle = null;
+    };
+
+    // Function to save vehicle update
+    window.saveVehicleUpdate = async function() {
+        if (!currentEditingVehicle) {
+            alert('Lỗi: Không tìm thấy thông tin xe');
+            return;
+        }
+
+        try {
+            const battery = parseInt(document.getElementById('modalBattery').value);
+            const bookingStatus = document.getElementById('modalBookingStatus').value;
+
+            // Validate input
+            if (isNaN(battery) || battery < 0 || battery > 100) {
+                alert('Mức pin phải từ 0 đến 100%');
+                return;
+            }
+
+            console.log('Updating vehicle:', {
+                id: currentEditingVehicle.id,
+                battery: battery,
+                bookingStatus: bookingStatus
+            });
+
+            // Make API call to update vehicle
+            const response = await fetch(`/api/vehicles/${currentEditingVehicle.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    battery: battery,
+                    bookingStatus: bookingStatus
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Cập nhật thất bại (${response.status}): ${errorData}`);
+            }
+
+            const result = await response.json();
+            console.log('Update successful:', result);
+
+            alert('Cập nhật xe thành công!');
+            closeUpdateModal();
+
+            // Reload vehicles list
+            loadVehiclesForStation();
+        } catch (error) {
+            console.error('Error saving vehicle update:', error);
+            alert('Lỗi khi cập nhật: ' + error.message);
+        }
+    };
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        const modal = document.getElementById('updateVehicleModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+            currentEditingVehicle = null;
+        }
+    };
 
 });

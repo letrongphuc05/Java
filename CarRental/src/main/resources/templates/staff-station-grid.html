@@ -45,6 +45,39 @@
     </div>
 </div>
 
+<!-- Modal Cập nhật xe -->
+<div id="updateVehicleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Cập nhật thông tin xe</h2>
+            <button type="button" class="close-btn" onclick="closeUpdateModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Biển số xe:</label>
+                <input type="text" id="modalPlate" disabled>
+            </div>
+            <div class="form-group">
+                <label>Mức pin (%):</label>
+                <input type="number" id="modalBattery" min="0" max="100" step="5">
+            </div>
+            <div class="form-group">
+                <label>Trạng thái:</label>
+                <select id="modalBookingStatus">
+                    <option value="PENDING_PAYMENT">Chờ thanh toán</option>
+                    <option value="AVAILABLE">Sẵn sàng</option>
+                    <option value="MAINTENANCE">Chưa sẵn sàng</option>
+                    <option value="RENTED">Đang được thuê</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()">Hủy</button>
+            <button type="button" class="btn btn-primary" onclick="saveVehicleUpdate()">Lưu</button>
+        </div>
+    </div>
+</div>
+
 <script th:src="@{/js/staff-station-grid.js}"></script>
 
 </body>

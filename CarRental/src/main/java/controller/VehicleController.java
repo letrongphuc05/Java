@@ -80,6 +80,36 @@ public class VehicleController {
         return repo.save(updatedVehicle);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateVehicleStatus(@PathVariable("id") String id, @RequestBody Map<String, Object> updates) {
+        try {
+            Optional<Vehicle> vehicleOpt = repo.findById(id);
+            if (!vehicleOpt.isPresent()) {
+                return ResponseEntity.status(404).body(Map.of("error", "Không tìm thấy xe"));
+            }
+
+            Vehicle vehicle = vehicleOpt.get();
+
+            // Update battery if provided
+            if (updates.containsKey("battery")) {
+                Object batteryObj = updates.get("battery");
+                if (batteryObj instanceof Number) {
+                    vehicle.setBattery(((Number) batteryObj).intValue());
+                }
+            }
+
+            // Update booking status if provided
+            if (updates.containsKey("bookingStatus")) {
+                vehicle.setBookingStatus((String) updates.get("bookingStatus"));
+            }
+
+            Vehicle updated = repo.save(vehicle);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Lỗi khi cập nhật: " + e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/admin/delete/{id}")
     public String deleteVehicle(@PathVariable("id") String id) {
         repo.deleteById(id);
