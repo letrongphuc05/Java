@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function() {
 
     const stationTableBody = document.getElementById('stationTableBody');
+    const searchInput = document.getElementById('searchInput');
 
     const addStationBtn = document.getElementById('addStationBtn');
     const addModal = document.getElementById('addStationModal');
@@ -11,12 +12,13 @@ document.addEventListener("DOMContentLoaded", function() {
     const editCloseButton = editModal.querySelector('.close-button');
     const editStationForm = document.getElementById('editStationForm');
 
+    let allStationsData = [];
+
+
     window.toggleProfileMenu = function(event) {
         event.stopPropagation();
         const dropdown = document.getElementById('profileDropdown');
-        if (dropdown) {
-            dropdown.classList.toggle('show');
-        }
+        if (dropdown) dropdown.classList.toggle('show');
     };
 
     loadStations();
@@ -26,32 +28,62 @@ document.addEventListener("DOMContentLoaded", function() {
             const response = await fetch('/api/stations/admin/all');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-            const stations = await response.json();
-            stationTableBody.innerHTML = '';
+            allStationsData = await response.json();
 
-            stations.forEach(station => {
-                const tr = document.createElement('tr');
-                const addressText = station.address ? station.address : "Chưa cập nhật";
-
-                tr.innerHTML = `
-                    <td>${station.id}</td>
-                    <td>${station.name}</td>
-                    <td>
-                        <span style="display: block;">${addressText}</span>
-                        <small style="color: #555;">(Lat: ${station.latitude}, Lng: ${station.longitude})</small>
-                    </td>
-                    <td>
-                        <button class="btn-edit" data-id="${station.id}">Sửa</button>
-                        <button class="btn-delete" data-id="${station.id}">Xóa</button>
-                    </td>
-                `;
-                stationTableBody.appendChild(tr);
-            });
+            renderTable(allStationsData);
 
         } catch (error) {
             console.error("Không thể tải danh sách trạm:", error);
-            stationTableBody.innerHTML = '<tr><td colspan="4">Lỗi khi tải dữ liệu.</td></tr>';
+            stationTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Lỗi khi tải dữ liệu.</td></tr>';
         }
+    }
+
+    function renderTable(data) {
+        stationTableBody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            stationTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Không tìm thấy trạm nào phù hợp.</td></tr>';
+            return;
+        }
+
+        data.forEach(station => {
+            const tr = document.createElement('tr');
+            const addressText = station.address ? station.address : "Chưa cập nhật";
+
+            tr.innerHTML = `
+                <td>${station.id}</td>
+                <td>${station.name}</td>
+                <td>
+                    <span style="display: block;">${addressText}</span>
+                    <small style="color: #555;">(Lat: ${station.latitude}, Lng: ${station.longitude})</small>
+                </td>
+                <td>
+                    <button class="btn-edit" data-id="${station.id}">Sửa</button>
+                    <button class="btn-delete" data-id="${station.id}">Xóa</button>
+                </td>
+            `;
+            stationTableBody.appendChild(tr);
+        });
+    }
+
+    function filterStations() {
+        if (!allStationsData) return;
+
+        const searchText = searchInput.value.toLowerCase().trim();
+
+        const filtered = allStationsData.filter(station => {
+            const name = (station.name || "").toLowerCase();
+            const address = (station.address || "").toLowerCase();
+            const id = (station.id || "").toLowerCase();
+
+            return name.includes(searchText) || address.includes(searchText) || id.includes(searchText);
+        });
+
+        renderTable(filtered);
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterStations);
     }
 
     if(addStationBtn) {
@@ -85,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
 
                 if (response.ok) {
-                    alert('Thêm trạm thành công! ID đã được tạo tự động.');
+                    alert('Thêm trạm thành công!');
                     addModal.style.display = 'none';
                     addStationForm.reset();
                     loadStations();
@@ -93,7 +125,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     alert('Có lỗi xảy ra. Không thể thêm trạm.');
                 }
             } catch (error) {
-                console.error('Lỗi khi thêm trạm:', error);
                 alert('Lỗi kết nối. Vui lòng thử lại.');
             }
         });
@@ -102,24 +133,18 @@ document.addEventListener("DOMContentLoaded", function() {
     stationTableBody.addEventListener('click', async function(event) {
         const target = event.target;
         const id = target.dataset.id;
-
         if (!id) return;
 
+        // Xóa
         if (target.classList.contains('btn-delete')) {
-            if (confirm(`Bạn có chắc muốn xóa trạm "${id}"? \nLƯU Ý: Chỉ xóa được khi trạm không còn xe.`)) {
+            if (confirm(`Bạn có chắc muốn xóa trạm "${id}"?`)) {
                 try {
-                    const response = await fetch(`/api/stations/admin/delete/${id}`, {
-                        method: 'DELETE'
-                    });
-                    const responseText = await response.text();
-                    if (response.ok) {
-                        alert(responseText);
-                        loadStations();
-                    } else {
-                        alert(responseText);
-                    }
+                    const response = await fetch(`/api/stations/admin/delete/${id}`, { method: 'DELETE' });
+                    const text = await response.text();
+                    alert(text);
+                    if (response.ok) loadStations();
                 } catch (error) {
-                    alert('Lỗi kết nối: ' + error.message);
+                    alert('Lỗi kết nối.');
                 }
             }
         }
@@ -127,9 +152,9 @@ document.addEventListener("DOMContentLoaded", function() {
         if (target.classList.contains('btn-edit')) {
             try {
                 const response = await fetch(`/api/stations/admin/${id}`);
-                if (!response.ok) throw new Error('Không tìm thấy dữ liệu trạm.');
-
+                if (!response.ok) throw new Error('Không tìm thấy dữ liệu');
                 const station = await response.json();
+
                 editStationForm.querySelector('#edit-id').value = station.id;
                 editStationForm.querySelector('#edit-name').value = station.name;
                 editStationForm.querySelector('#edit-lat').value = station.latitude;
@@ -137,7 +162,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 editStationForm.querySelector('#edit-address').value = station.address;
 
                 editModal.style.display = 'block';
-
             } catch (error) {
                 alert(error.message);
             }
@@ -149,7 +173,6 @@ document.addEventListener("DOMContentLoaded", function() {
             event.preventDefault();
             const formData = new FormData(editStationForm);
             const id = formData.get('id');
-
             const stationData = {
                 id: id,
                 name: formData.get('name'),
@@ -164,25 +187,20 @@ document.addEventListener("DOMContentLoaded", function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(stationData)
                 });
-
                 if (response.ok) {
-                    alert('Cập nhật trạm thành công!');
+                    alert('Cập nhật thành công!');
                     editModal.style.display = 'none';
                     loadStations();
                 } else {
-                    alert('Có lỗi xảy ra. Không thể cập nhật trạm.');
+                    alert('Lỗi cập nhật.');
                 }
             } catch (error) {
-                alert('Lỗi kết nối: ' + error.message);
+                alert('Lỗi kết nối.');
             }
         });
     }
 
-    if(editCloseButton) {
-        editCloseButton.onclick = function() {
-            editModal.style.display = "none";
-        }
-    }
+    if(editCloseButton) editCloseButton.onclick = () => editModal.style.display = "none";
 
     window.onclick = function(event) {
         if (event.target == addModal) addModal.style.display = "none";

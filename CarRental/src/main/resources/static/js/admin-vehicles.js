@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function() {
 
     const vehicleTableBody = document.getElementById('vehicleTableBody');
+    const searchInput = document.getElementById('searchInput');
 
     const addVehicleBtn = document.getElementById('addVehicleBtn');
     const addModal = document.getElementById('addVehicleModal');
@@ -11,64 +12,113 @@ document.addEventListener("DOMContentLoaded", function() {
     const editCloseButton = editModal.querySelector('.close-button');
     const editVehicleForm = document.getElementById('editVehicleForm');
 
+    let allVehiclesData = [];
+
     window.toggleProfileMenu = function(event) {
         event.stopPropagation();
         const dropdown = document.getElementById('profileDropdown');
         if (dropdown) dropdown.classList.toggle('show');
     };
 
+    window.addEventListener('click', function(event) {
+        if (!event.target.closest('.admin-profile')) {
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    });
+
     loadVehicles();
 
     async function loadVehicles() {
+        if (!vehicleTableBody) return;
+        vehicleTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Đang tải dữ liệu...</td></tr>';
+
         try {
             const response = await fetch('/api/vehicles/admin/all');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            let vehicles = await response.json();
 
-            vehicles.sort((a, b) => {
+            allVehiclesData = await response.json();
+            allVehiclesData.sort((a, b) => {
                 const numA = parseInt(a.stationId.replace('st', '')) || 0;
                 const numB = parseInt(b.stationId.replace('st', '')) || 0;
                 if (numA !== numB) return numA - numB;
                 return a.plate.localeCompare(b.plate);
             });
 
-            vehicleTableBody.innerHTML = '';
-
-            vehicles.forEach(vehicle => {
-                const tr = document.createElement('tr');
-                let statusClass = 'status-available';
-                let statusText = 'Sẵn sàng';
-
-                if (vehicle.bookingStatus === 'PENDING_PAYMENT') {
-                    statusClass = 'status-pending';
-                    statusText = 'Chờ thanh toán';
-                } else if (vehicle.bookingStatus === 'RENTED' || !vehicle.available) {
-                    statusClass = 'status-rented';
-                    statusText = 'Đang thuê';
-                } else if (vehicle.bookingStatus === 'MAINTENANCE') {
-                    statusClass = 'status-maintenance';
-                    statusText = 'Bảo trì';
-                }
-
-                tr.innerHTML = `
-                    <td>${vehicle.plate}</td>
-                    <td>${vehicle.brand} (${vehicle.type})</td>
-                    <td>${vehicle.stationId}</td>
-                    <td>${vehicle.battery}%</td>
-                    <td>${vehicle.price.toLocaleString('vi-VN')} / ngày</td>
-                    <td><span class="status ${statusClass}">${statusText}</span></td>
-                    <td>
-                        <button class="btn-edit" data-id="${vehicle.id}">Sửa</button>
-                        <button class="btn-delete" data-id="${vehicle.id}">Xóa</button>
-                    </td>
-                `;
-                vehicleTableBody.appendChild(tr);
-            });
+            renderTable(allVehiclesData);
 
         } catch (error) {
             console.error("Lỗi:", error);
-            vehicleTableBody.innerHTML = '<tr><td colspan="7">Lỗi khi tải dữ liệu.</td></tr>';
+            vehicleTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red;">Lỗi khi tải dữ liệu.</td></tr>';
         }
+    }
+
+    function renderTable(data) {
+        vehicleTableBody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            vehicleTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Không tìm thấy xe phù hợp.</td></tr>';
+            return;
+        }
+
+        data.forEach(vehicle => {
+            const tr = document.createElement('tr');
+            let statusClass = 'status-available';
+            let statusText = 'Sẵn sàng';
+
+            if (vehicle.bookingStatus === 'PENDING_PAYMENT') {
+                statusClass = 'status-pending';
+                statusText = 'Chờ thanh toán';
+            } else if (vehicle.bookingStatus === 'RENTED' || !vehicle.available) {
+                statusClass = 'status-rented';
+                statusText = 'Đang thuê';
+            } else if (vehicle.bookingStatus === 'MAINTENANCE') {
+                statusClass = 'status-maintenance';
+                statusText = 'Bảo trì';
+            }
+
+            const price = vehicle.price ? vehicle.price.toLocaleString('vi-VN') : '0';
+
+            tr.innerHTML = `
+                <td>${vehicle.plate}</td>
+                <td>${vehicle.brand} (${vehicle.type})</td>
+                <td>${vehicle.stationId}</td>
+                <td>${vehicle.battery}%</td>
+                <td>${price} / ngày</td>
+                <td><span class="status ${statusClass}">${statusText}</span></td>
+                <td>
+                    <button class="btn-edit" data-id="${vehicle.id}">Sửa</button>
+                    <button class="btn-delete" data-id="${vehicle.id}">Xóa</button>
+                </td>
+            `;
+            vehicleTableBody.appendChild(tr);
+        });
+    }
+
+    function filterVehicles() {
+        if (!allVehiclesData) return;
+
+        const searchText = searchInput.value.toLowerCase().trim();
+
+        const filtered = allVehiclesData.filter(vehicle => {
+            const plate = (vehicle.plate || "").toLowerCase();
+            const brand = (vehicle.brand || "").toLowerCase();
+            const type = (vehicle.type || "").toLowerCase();
+            const stationId = (vehicle.stationId || "").toLowerCase();
+
+            return plate.includes(searchText) ||
+                   brand.includes(searchText) ||
+                   type.includes(searchText) ||
+                   stationId.includes(searchText);
+        });
+
+        renderTable(filtered);
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterVehicles);
     }
 
     addVehicleBtn.onclick = function() {
@@ -115,6 +165,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const id = target.dataset.id;
         if (!id) return;
 
+        // Xóa
         if (target.classList.contains('btn-delete')) {
             if (confirm(`Bạn có chắc muốn xóa xe ID: ${id}?`)) {
                 try {
@@ -185,12 +236,5 @@ document.addEventListener("DOMContentLoaded", function() {
     window.onclick = function(event) {
         if (event.target == addModal) addModal.style.display = "none";
         if (event.target == editModal) editModal.style.display = "none";
-
-        if (!event.target.closest('.admin-profile')) {
-            const dropdown = document.getElementById('profileDropdown');
-            if (dropdown && dropdown.classList.contains('show')) {
-                dropdown.classList.remove('show');
-            }
-        }
     }
 });
