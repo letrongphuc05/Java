@@ -70,6 +70,35 @@ document.addEventListener("DOMContentLoaded", function() {
                 const modelName = formatModel(vehicle);
                 const statusText = formatStatus(vehicle.bookingStatus);
 
+                // Determine severity badge class
+                const getSeverityClass = (severity) => {
+                    const severityMap = {
+                        'MINOR': 'severity-minor',
+                        'MODERATE': 'severity-moderate',
+                        'CRITICAL': 'severity-critical'
+                    };
+                    return severityMap[severity] || '';
+                };
+
+                // Format severity text
+                const formatSeverity = (severity) => {
+                    const severityMap = {
+                        'MINOR': 'Nhẹ',
+                        'MODERATE': 'Trung bình',
+                        'CRITICAL': 'Nghiêm trọng'
+                    };
+                    return severityMap[severity] || severity;
+                };
+
+                // Build issue display section if issue exists
+                const issueSection = vehicle.issue ? `
+                    <div class="issue-section ${getSeverityClass(vehicle.issueSeverity)}">
+                        <div class="issue-label">⚠️ Sự cố</div>
+                        <div class="issue-text">${vehicle.issue}</div>
+                        <div class="issue-severity">Mức độ: ${formatSeverity(vehicle.issueSeverity)}</div>
+                    </div>
+                ` : '';
+
                 card.innerHTML = `
                     <div class="card-header">
                         <div class="plate">${vehicle.plate || 'N/A'}</div>
@@ -84,6 +113,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             <label>Trạng thái</label>
                             <span class="status-badge ${statusBadgeClass}">${statusText}</span>
                         </div>
+                        ${issueSection}
                     </div>
                     <div class="card-footer">
                         <button class="btn-card" data-id="${vehicle.id}" data-action="update">Cập nhật</button>
@@ -102,6 +132,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     let currentEditingVehicle = null;
+    let currentReportingVehicle = null;
 
     vehicleGrid.addEventListener('click', (event) => {
         const target = event.target;
@@ -113,12 +144,117 @@ document.addEventListener("DOMContentLoaded", function() {
         if (action === 'update') {
             openUpdateModal(vehicleId);
         } else if (action === 'report') {
-            const issue = prompt(`Nhập sự cố cho xe ID: ${vehicleId}`);
-            if (issue) {
-                alert(`Gửi báo cáo: "${issue}"`);
-            }
+            openReportModal(vehicleId);
         }
     });
+
+    // Function to open report issue modal
+    window.openReportModal = function(vehicleId) {
+        try {
+            // Find vehicle data from grid
+            const vehicleCard = Array.from(vehicleGrid.querySelectorAll('.vehicle-card')).find(card => {
+                return card.querySelector('button[data-id="' + vehicleId + '"]') !== null;
+            });
+
+            if (!vehicleCard) {
+                console.error('Vehicle card not found');
+                return;
+            }
+
+            // Extract plate from card
+            const plateText = vehicleCard.querySelector('.plate').textContent;
+
+            // Fill modal with current data
+            document.getElementById('reportModalPlate').value = plateText;
+            document.getElementById('issueDescription').value = '';
+            document.getElementById('issueSeverity').value = 'MODERATE';
+
+            // Store vehicle info for reporting
+            currentReportingVehicle = {
+                id: vehicleId,
+                plate: plateText
+            };
+
+            // Show modal
+            document.getElementById('reportIssueModal').style.display = 'block';
+        } catch (error) {
+            console.error('Error opening report modal:', error);
+            alert('Lỗi khi mở modal báo cáo sự cố');
+        }
+    };
+
+    // Function to close report modal
+    window.closeReportModal = function() {
+        document.getElementById('reportIssueModal').style.display = 'none';
+        currentReportingVehicle = null;
+    };
+
+    // Function to submit issue report
+    window.submitIssueReport = async function() {
+        if (!currentReportingVehicle) {
+            alert('Lỗi: Không tìm thấy thông tin xe');
+            return;
+        }
+
+        const issueDescription = document.getElementById('issueDescription').value.trim();
+        const issueSeverity = document.getElementById('issueSeverity').value;
+
+        if (!issueDescription) {
+            alert('Vui lòng nhập mô tả sự cố');
+            return;
+        }
+
+        try {
+            console.log('Reporting issue for vehicle:', {
+                id: currentReportingVehicle.id,
+                issue: issueDescription,
+                severity: issueSeverity
+            });
+
+            // Make API call to report issue and update vehicle status to MAINTENANCE
+            const response = await fetch(`/api/vehicles/${currentReportingVehicle.id}/report-issue`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    issue: issueDescription,
+                    severity: issueSeverity
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Báo cáo thất bại (${response.status}): ${errorData}`);
+            }
+
+            const result = await response.json();
+            console.log('Report submitted successfully:', result);
+
+            alert('Báo cáo sự cố thành công! Xe được chuyển sang trạng thái bảo trì.');
+            closeReportModal();
+
+            // Reload vehicles list
+            loadVehiclesForStation();
+        } catch (error) {
+            console.error('Error submitting issue report:', error);
+            alert('Lỗi khi báo cáo: ' + error.message);
+        }
+    };
+
+    // Close modal when clicking outside of it
+    window.onClickOutsideModal = function(event) {
+        const updateModal = document.getElementById('updateVehicleModal');
+        const reportModal = document.getElementById('reportIssueModal');
+        if (event.target == updateModal) {
+            updateModal.style.display = 'none';
+            currentEditingVehicle = null;
+        }
+        if (event.target == reportModal) {
+            reportModal.style.display = 'none';
+            currentReportingVehicle = null;
+        }
+    };
     // Function to open update modal
     window.openUpdateModal = function(vehicleId) {
         try {
@@ -228,10 +364,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Close modal when clicking outside of it
     window.onclick = function(event) {
-        const modal = document.getElementById('updateVehicleModal');
-        if (event.target == modal) {
-            modal.style.display = 'none';
+        const updateModal = document.getElementById('updateVehicleModal');
+        const reportModal = document.getElementById('reportIssueModal');
+        if (event.target == updateModal) {
+            updateModal.style.display = 'none';
             currentEditingVehicle = null;
+        }
+        if (event.target == reportModal) {
+            reportModal.style.display = 'none';
+            currentReportingVehicle = null;
         }
     };
 

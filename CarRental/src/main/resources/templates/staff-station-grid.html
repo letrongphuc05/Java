@@ -16,6 +16,7 @@
             <li><a th:href="@{/staff/receive}">Nhận xe</a></li>
             <li><a th:href="@{/staff/deliver}">Giao xe</a></li>
             <li><a th:href="@{/staff/verify}">Xác thực</a></li>
+            <li><a th:href="@{/staff/vehicle-reports}">Báo cáo sự cố</a></li>
             <li><a th:href="@{/logout}">Đăng xuất</a></li>
         </ul>
     </nav>
@@ -73,6 +74,38 @@
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()">Hủy</button>
             <button type="button" class="btn btn-primary" onclick="saveVehicleUpdate()">Lưu</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal báo cáo sự cố -->
+<div id="reportIssueModal" class="modal report-modal">
+    <div class="modal-content report-modal-content">
+        <div class="modal-header report-modal-header">
+            <h2>📋 Báo cáo sự cố</h2>
+            <button type="button" class="close-btn" onclick="closeReportModal()">&times;</button>
+        </div>
+        <div class="modal-body report-modal-body">
+            <div class="form-group">
+                <label>Biển số xe:</label>
+                <input type="text" id="reportModalPlate" disabled class="plate-input">
+            </div>
+            <div class="form-group">
+                <label for="issueDescription">Mô tả sự cố:</label>
+                <textarea id="issueDescription" placeholder="Nhập chi tiết sự cố..." rows="5" class="issue-textarea"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="issueSeverity">Mức độ nghiêm trọng:</label>
+                <select id="issueSeverity" class="severity-select">
+                    <option value="MINOR">Nhẹ</option>
+                    <option value="MODERATE">Trung bình</option>
+                    <option value="CRITICAL">Nghiêm trọng</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer report-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeReportModal()">Hủy</button>
+            <button type="button" class="btn btn-danger" onclick="submitIssueReport()">Báo cáo</button>
         </div>
     </div>
 </div>

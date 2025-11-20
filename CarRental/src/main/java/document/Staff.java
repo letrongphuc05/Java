@@ -18,4 +18,7 @@ public class Staff extends User {
         this.stationId = stationId;
     }
 
+    public String getName() {
+        return "";
+    }
 }
