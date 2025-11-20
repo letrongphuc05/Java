@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AgentMigrationStateService">
+    <option name="migrationStatus" value="IN_PROGRESS" />
+    <option name="pendingSessionIds">
+      <option value="9a606c42-b595-46f4-8e44-568eac6eb71b" />
+      <option value="b86cba1a-9fe0-4504-b440-0876ea119ccc" />
+      <option value="d85d32ae-4f88-49ee-af73-cf9753a3b3a5" />
+      <option value="ec7b9a58-524a-4837-b09f-2535c26d9d9a" />
+    </option>
+    <pendingWorkingSetItems>
+      <entry key="353e1163-034e-4047-b961-0adaf6419699" />
+    </pendingWorkingSetItems>
+  </component>
+</project>
