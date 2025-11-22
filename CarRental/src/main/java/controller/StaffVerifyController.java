@@ -19,7 +19,7 @@ public class StaffVerifyController {
 
     /**
      * Lấy danh sách người dùng (role = ROLE_USER) chưa xác thực (verified = false)
-     * có licenseData hoặc idCardData, sắp xếp theo thời gian cập nhật mới nhất
+     * Trả về danh sách các loại giấy tờ mà user đó có
      */
     @GetMapping("/verifications/pending")
     public List<Map<String, Object>> getPendingVerifications() {
@@ -28,29 +28,54 @@ public class StaffVerifyController {
         return allUsers.stream()
                 .filter(user -> "ROLE_USER".equals(user.getRole()))
                 .filter(user -> !user.isVerified())
-                .filter(user -> user.getLicenseData() != null || user.getIdCardData() != null)
                 .flatMap(user -> {
                     List<Map<String, Object>> results = new ArrayList<>();
+                    boolean hasLicense = user.getLicenseData() != null;
+                    boolean hasIdCard = user.getIdCardData() != null;
 
-                    // Thêm bản ghi cho licenseData nếu tồn tại
-                    if (user.getLicenseData() != null) {
+                    if (!hasLicense && !hasIdCard) {
+                        // Nếu không có giấy tờ nào, vẫn thêm vào danh sách nhưng docType = "Chưa nộp"
+                        Map<String, Object> notSubmittedEntry = new LinkedHashMap<>();
+                        notSubmittedEntry.put("userId", user.getId());
+                        notSubmittedEntry.put("username", user.getUsername());
+                        notSubmittedEntry.put("docType", "Chưa nộp");
+                        notSubmittedEntry.put("submittedAt", "");
+                        notSubmittedEntry.put("verificationRequested", user.isVerificationRequested());
+                        notSubmittedEntry.put("hasLicense", false);
+                        notSubmittedEntry.put("hasIdCard", false);
+                        results.add(notSubmittedEntry);
+                    } else if (hasLicense && hasIdCard) {
+                        // Nếu có cả 2, gộp thành 1 dòng
+                        Map<String, Object> combinedEntry = new LinkedHashMap<>();
+                        combinedEntry.put("userId", user.getId());
+                        combinedEntry.put("username", user.getUsername());
+                        combinedEntry.put("docType", "GPLX, CMND/CCCD");
+                        combinedEntry.put("submittedAt", formatTimeAgo(user.getUpdatedAt()));
+                        combinedEntry.put("verificationRequested", user.isVerificationRequested());
+                        combinedEntry.put("hasLicense", true);
+                        combinedEntry.put("hasIdCard", true);
+                        results.add(combinedEntry);
+                    } else if (hasLicense) {
+                        // Chỉ có licenseData
                         Map<String, Object> licenseEntry = new LinkedHashMap<>();
                         licenseEntry.put("userId", user.getId());
                         licenseEntry.put("username", user.getUsername());
-                        licenseEntry.put("docType", "Giấy phép lái xe");
-                        licenseEntry.put("submittedAt", formatTimeAgo(new Date()));
+                        licenseEntry.put("docType", "GPLX");
+                        licenseEntry.put("submittedAt", formatTimeAgo(user.getUpdatedAt()));
                         licenseEntry.put("verificationRequested", user.isVerificationRequested());
+                        licenseEntry.put("hasLicense", true);
+                        licenseEntry.put("hasIdCard", false);
                         results.add(licenseEntry);
-                    }
-
-                    // Thêm bản ghi cho idCardData nếu tồn tại
-                    if (user.getIdCardData() != null) {
+                    } else {
+                        // Chỉ có idCardData
                         Map<String, Object> idCardEntry = new LinkedHashMap<>();
                         idCardEntry.put("userId", user.getId());
                         idCardEntry.put("username", user.getUsername());
                         idCardEntry.put("docType", "CMND/CCCD");
-                        idCardEntry.put("submittedAt", formatTimeAgo(new Date()));
+                        idCardEntry.put("submittedAt", formatTimeAgo(user.getUpdatedAt()));
                         idCardEntry.put("verificationRequested", user.isVerificationRequested());
+                        idCardEntry.put("hasLicense", false);
+                        idCardEntry.put("hasIdCard", true);
                         results.add(idCardEntry);
                     }
 
@@ -58,7 +83,9 @@ public class StaffVerifyController {
                 })
                 .sorted((a, b) -> {
                     // Sắp xếp theo thời gian cập nhật mới nhất đến cũ
-                    return b.get("submittedAt").toString().compareTo(a.get("submittedAt").toString());
+                    String timeA = a.get("submittedAt").toString();
+                    String timeB = b.get("submittedAt").toString();
+                    return timeB.compareTo(timeA);
                 })
                 .collect(Collectors.toList());
     }
@@ -116,6 +143,7 @@ public class StaffVerifyController {
         if (approved) {
             user.setVerified(true);
             user.setVerificationRequested(false);
+            user.setUpdatedAt(new Date());
             userRepo.save(user);
             return Collections.singletonMap("status", "APPROVED");
         } else {
@@ -123,6 +151,7 @@ public class StaffVerifyController {
             user.setLicenseData(null);
             user.setIdCardData(null);
             user.setVerificationRequested(false);
+            user.setUpdatedAt(new Date());
             userRepo.save(user);
             return Collections.singletonMap("status", "DENIED");
         }
@@ -135,6 +164,7 @@ public class StaffVerifyController {
 
         user.setVerified(true);
         user.setVerificationRequested(false);
+        user.setUpdatedAt(new Date());
         userRepo.save(user);
 
         return "USER_VERIFIED_SUCCESSFULLY";
@@ -144,6 +174,10 @@ public class StaffVerifyController {
      * Định dạng thời gian thành "X phút trước", "X giờ trước", etc.
      */
     private String formatTimeAgo(Date date) {
+        if (date == null) {
+            return "";
+        }
+
         long now = System.currentTimeMillis();
         long diffInMillis = now - date.getTime();
 

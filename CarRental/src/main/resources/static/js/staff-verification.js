@@ -8,8 +8,30 @@ document.addEventListener("DOMContentLoaded", function() {
     const docPreviewFront = document.getElementById('doc-preview-front');
     const docPreviewBack = document.getElementById('doc-preview-back');
     const docInfoText = document.getElementById('doc-info-text');
+    const imageModal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const imageModalClose = document.querySelector('.image-modal-close');
 
     let selectedUserId = null;
+
+    // Event listener cho modal
+    imageModalClose.addEventListener('click', () => {
+        imageModal.style.display = 'none';
+    });
+
+    imageModal.addEventListener('click', (e) => {
+        if (e.target === imageModal) {
+            imageModal.style.display = 'none';
+        }
+    });
+
+    // Keyboard event để đóng modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && imageModal.style.display === 'flex') {
+            imageModal.style.display = 'none';
+        }
+    });
+
     loadVerificationRequests();
 
     async function loadVerificationRequests() {
@@ -39,16 +61,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
-                        <img src="/images/avatar-placeholder.png" class="user-avatar" alt="avatar">
-                        <div>
-                            <span class="user-name">${req.username || 'N/A'}</span>
-                        </div>
+                        <span class="user-name">${req.username || 'N/A'}</span>
                     </td>
                     <td><span class="status-pending-orange">Chờ xác nhận</span></td>
                     <td>${req.docType}</td>
-                    <td>${req.submittedAt}</td>
+                    <td>${req.submittedAt || '-'}</td>
                     <td><a href="#" class="action-link" data-userid="${req.userId}">Nhấn để xem</a></td>
                 `;
+                tr.dataset.hasLicense = req.hasLicense || false;
+                tr.dataset.hasIdCard = req.hasIdCard || false;
                 verificationListBody.appendChild(tr);
             });
 
@@ -60,7 +81,20 @@ document.addEventListener("DOMContentLoaded", function() {
     verificationListBody.addEventListener('click', function(event) {
         if (event.target.classList.contains('action-link')) {
             event.preventDefault();
+            const row = event.target.closest('tr');
             selectedUserId = event.target.dataset.userid;
+
+            const hasLicense = row.dataset.hasLicense === 'true';
+            const hasIdCard = row.dataset.hasIdCard === 'true';
+
+            // Nếu không có giấy tờ nào, thông báo
+            if (!hasLicense && !hasIdCard) {
+                alert('Chưa có giấy tờ nào được nộp từ người dùng này.');
+                docPreviewFront.innerHTML = '<span style="color: #999;">(Chưa nộp)</span>';
+                docPreviewBack.innerHTML = '<span style="color: #999;">(Chưa nộp)</span>';
+                docInfoText.innerHTML = '';
+                return;
+            }
 
             // Gọi API backend để lấy chi tiết thông tin người dùng
             fetch(`/api/staff/verifications/detail/${selectedUserId}`, {
@@ -75,18 +109,23 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
 
                 // Hiển thị ảnh giấy tờ từ Base64
-                if (data.idCardData) {
-                    // Hiển thị CMND/CCCD nếu có
-                    // Giả sử ảnh mặt trước là idCardData, bạn có thể tách thành 2 phần nếu cần
+                if (hasIdCard && data.idCardData) {
+                    // Hiển thị CMND/CCCD ở mặt trước
                     docPreviewFront.innerHTML = `<img src="${data.idCardData}" style="width:100%; height:100%; object-fit: cover; cursor: pointer;" alt="ID Card Front">`;
-                    docPreviewBack.innerHTML = `<span style="color: #999;">Mặt sau (nếu có)</span>`;
-                } else if (data.licenseData) {
+
+                    // Nếu có cả licenseData, hiển thị ở mặt sau
+                    if (hasLicense && data.licenseData) {
+                        docPreviewBack.innerHTML = `<img src="${data.licenseData}" style="width:100%; height:100%; object-fit: cover;" alt="License">`;
+                    } else {
+                        docPreviewBack.innerHTML = `<span style="color: #999;">-</span>`;
+                    }
+                } else if (hasLicense && data.licenseData) {
                     // Hiển thị Giấy phép lái xe
                     docPreviewFront.innerHTML = `<img src="${data.licenseData}" style="width:100%; height:100%; object-fit: cover; cursor: pointer;" alt="License">`;
-                    docPreviewBack.innerHTML = `<span style="color: #999;">Không có giấy phép lái xe khác</span>`;
+                    docPreviewBack.innerHTML = `<span style="color: #999;">-</span>`;
                 } else {
                     docPreviewFront.innerHTML = `<span style="color: #999;">(Không có dữ liệu)</span>`;
-                    docPreviewBack.innerHTML = `<span style="color: #999;">(Không có dữ liệu)</span>`;
+                    docPreviewBack.innerHTML = `<span style="color: #999;">-</span>`;
                 }
 
                 // Hiển thị thông tin người dùng
@@ -102,6 +141,21 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     approveBtn.addEventListener('click', () => handleVerification(true));
     denyBtn.addEventListener('click', () => handleVerification(false));
+
+    // Event listener để click vào ảnh và phóng to
+    docPreviewFront.addEventListener('click', function(e) {
+        if (e.target.tagName === 'IMG') {
+            modalImage.src = e.target.src;
+            imageModal.style.display = 'flex';
+        }
+    });
+
+    docPreviewBack.addEventListener('click', function(e) {
+        if (e.target.tagName === 'IMG') {
+            modalImage.src = e.target.src;
+            imageModal.style.display = 'flex';
+        }
+    });
 
     async function handleVerification(isApproved) {
         if (!selectedUserId) {
