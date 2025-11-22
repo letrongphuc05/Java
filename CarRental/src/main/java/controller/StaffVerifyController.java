@@ -4,6 +4,9 @@ import CarRental.example.document.User;
 import CarRental.example.repository.UserRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/staff")
 public class StaffVerifyController {
@@ -12,6 +15,117 @@ public class StaffVerifyController {
 
     public StaffVerifyController(UserRepository userRepo) {
         this.userRepo = userRepo;
+    }
+
+    /**
+     * Lấy danh sách người dùng (role = ROLE_USER) chưa xác thực (verified = false)
+     * có licenseData hoặc idCardData, sắp xếp theo thời gian cập nhật mới nhất
+     */
+    @GetMapping("/verifications/pending")
+    public List<Map<String, Object>> getPendingVerifications() {
+        List<User> allUsers = userRepo.findAll();
+
+        return allUsers.stream()
+                .filter(user -> "ROLE_USER".equals(user.getRole()))
+                .filter(user -> !user.isVerified())
+                .filter(user -> user.getLicenseData() != null || user.getIdCardData() != null)
+                .flatMap(user -> {
+                    List<Map<String, Object>> results = new ArrayList<>();
+
+                    // Thêm bản ghi cho licenseData nếu tồn tại
+                    if (user.getLicenseData() != null) {
+                        Map<String, Object> licenseEntry = new LinkedHashMap<>();
+                        licenseEntry.put("userId", user.getId());
+                        licenseEntry.put("username", user.getUsername());
+                        licenseEntry.put("docType", "Giấy phép lái xe");
+                        licenseEntry.put("submittedAt", formatTimeAgo(new Date()));
+                        licenseEntry.put("verificationRequested", user.isVerificationRequested());
+                        results.add(licenseEntry);
+                    }
+
+                    // Thêm bản ghi cho idCardData nếu tồn tại
+                    if (user.getIdCardData() != null) {
+                        Map<String, Object> idCardEntry = new LinkedHashMap<>();
+                        idCardEntry.put("userId", user.getId());
+                        idCardEntry.put("username", user.getUsername());
+                        idCardEntry.put("docType", "CMND/CCCD");
+                        idCardEntry.put("submittedAt", formatTimeAgo(new Date()));
+                        idCardEntry.put("verificationRequested", user.isVerificationRequested());
+                        results.add(idCardEntry);
+                    }
+
+                    return results.stream();
+                })
+                .sorted((a, b) -> {
+                    // Sắp xếp theo thời gian cập nhật mới nhất đến cũ
+                    return b.get("submittedAt").toString().compareTo(a.get("submittedAt").toString());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy chi tiết người dùng kèm thông tin giấy tờ (Base64)
+     */
+    @GetMapping("/verifications/detail/{userId}")
+    public Map<String, Object> getVerificationDetail(@PathVariable String userId) {
+        Optional<User> userOpt = userRepo.findById(userId);
+
+        if (userOpt.isEmpty()) {
+            return Collections.singletonMap("error", "User not found");
+        }
+
+        User user = userOpt.get();
+        Map<String, Object> detail = new LinkedHashMap<>();
+
+        detail.put("userId", user.getId());
+        detail.put("username", user.getUsername());
+
+        // Chuyển Binary thành Base64
+        if (user.getLicenseData() != null) {
+            String licenseBase64 = Base64.getEncoder().encodeToString(user.getLicenseData().getData());
+            detail.put("licenseData", "data:image/png;base64," + licenseBase64);
+        } else {
+            detail.put("licenseData", null);
+        }
+
+        if (user.getIdCardData() != null) {
+            String idCardBase64 = Base64.getEncoder().encodeToString(user.getIdCardData().getData());
+            detail.put("idCardData", "data:image/png;base64," + idCardBase64);
+        } else {
+            detail.put("idCardData", null);
+        }
+
+        return detail;
+    }
+
+    /**
+     * Xác thực hoặc từ chối người dùng
+     */
+    @PostMapping("/verifications/process")
+    public Map<String, String> processVerification(@RequestBody Map<String, Object> request) {
+        String userId = (String) request.get("userId");
+        Boolean approved = (Boolean) request.get("approved");
+
+        Optional<User> userOpt = userRepo.findById(userId);
+        if (userOpt.isEmpty()) {
+            return Collections.singletonMap("status", "USER_NOT_FOUND");
+        }
+
+        User user = userOpt.get();
+
+        if (approved) {
+            user.setVerified(true);
+            user.setVerificationRequested(false);
+            userRepo.save(user);
+            return Collections.singletonMap("status", "APPROVED");
+        } else {
+            // Từ chối: xóa dữ liệu giấy tờ
+            user.setLicenseData(null);
+            user.setIdCardData(null);
+            user.setVerificationRequested(false);
+            userRepo.save(user);
+            return Collections.singletonMap("status", "DENIED");
+        }
     }
 
     @PostMapping("/verify-user/{id}")
@@ -24,5 +138,23 @@ public class StaffVerifyController {
         userRepo.save(user);
 
         return "USER_VERIFIED_SUCCESSFULLY";
+    }
+
+    /**
+     * Định dạng thời gian thành "X phút trước", "X giờ trước", etc.
+     */
+    private String formatTimeAgo(Date date) {
+        long now = System.currentTimeMillis();
+        long diffInMillis = now - date.getTime();
+
+        long minutes = diffInMillis / (60 * 1000);
+        if (minutes < 1) return "Vừa xong";
+        if (minutes < 60) return minutes + " phút trước";
+
+        long hours = minutes / 60;
+        if (hours < 24) return hours + " giờ trước";
+
+        long days = hours / 24;
+        return days + " ngày trước";
     }
 }

@@ -361,19 +361,4 @@ document.addEventListener("DOMContentLoaded", function() {
             alert('Lỗi khi cập nhật: ' + error.message);
         }
     };
-
-    // Close modal when clicking outside of it
-    window.onclick = function(event) {
-        const updateModal = document.getElementById('updateVehicleModal');
-        const reportModal = document.getElementById('reportIssueModal');
-        if (event.target == updateModal) {
-            updateModal.style.display = 'none';
-            currentEditingVehicle = null;
-        }
-        if (event.target == reportModal) {
-            reportModal.style.display = 'none';
-            currentReportingVehicle = null;
-        }
-    };
-
 });
